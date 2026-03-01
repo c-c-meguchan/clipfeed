@@ -1,0 +1,346 @@
+import AppKit
+import SwiftUI
+import Carbon
+import Combine
+
+// ANSI キーコードと数字（1〜9）のマッピング
+// 数字キーのキーコードは連番ではないため明示的に定義する
+private let kNumberKeyCodes: [Int64: Int] = [
+    18: 1, // kVK_ANSI_1
+    19: 2, // kVK_ANSI_2
+    20: 3, // kVK_ANSI_3
+    21: 4, // kVK_ANSI_4
+    23: 5, // kVK_ANSI_5
+    22: 6, // kVK_ANSI_6
+    26: 7, // kVK_ANSI_7
+    28: 8, // kVK_ANSI_8
+    25: 9  // kVK_ANSI_9
+]
+
+// Carbon ホットキーコールバック（キャプチャなしのファイルスコープ関数として定義）
+private func carbonHotKeyHandler(
+    _: EventHandlerCallRef?,
+    event: EventRef?,
+    userData: UnsafeMutableRawPointer?
+) -> OSStatus {
+    guard let event, let userData else { return OSStatus(eventNotHandledErr) }
+
+    var hotKeyID = EventHotKeyID()
+    GetEventParameter(
+        event,
+        UInt32(kEventParamDirectObject),
+        UInt32(typeEventHotKeyID),
+        nil,
+        MemoryLayout<EventHotKeyID>.size,
+        nil,
+        &hotKeyID
+    )
+
+    if hotKeyID.id == 1 {
+        let delegate = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
+        DispatchQueue.main.async {
+            print("Global shortcut detected")
+            delegate.togglePopover()
+        }
+    }
+    return noErr
+}
+
+// ---
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var statusItem: NSStatusItem?
+    private var popover: NSPopover?
+    private var clipboardViewModel: ClipboardViewModel?
+    private var viewModel: ClipboardHistoryViewModel?
+    private var localMonitor: Any?
+    private var hotKeyRef: EventHotKeyRef?
+    private var hotKeyHandlerRef: EventHandlerRef?
+    private var iconFlashCancellable: AnyCancellable?
+
+    private let keyCodeH: UInt16 = 4 // kVK_ANSI_H
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.accessory)
+        AppSettings.registerDefaults()
+        AppSettings.applyAppearance()
+        LaunchAtLoginHelper.setEnabled(AppSettings.launchAtLogin)
+
+        clipboardViewModel = ClipboardViewModel()
+        viewModel = ClipboardHistoryViewModel()
+
+        guard let clipboardViewModel, let viewModel else { return }
+
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "ClipFeed")
+            button.action = #selector(togglePopoverFromButton)
+            button.target = self
+        }
+        statusItem?.menu = nil
+
+        popover = NSPopover()
+        popover?.contentSize = NSSize(width: 400, height: 600)
+        popover?.behavior = .transient
+        popover?.contentViewController = NSHostingController(
+            rootView: MenuBarView()
+                .environmentObject(viewModel)
+                .environmentObject(clipboardViewModel)
+        )
+
+        addLocalMonitor()
+        registerCarbonHotKey()
+        observeAppearanceChanges()
+        observeOpenSettings()
+
+        UpdateChecker.shared.checkForUpdates()
+
+        // items.count が増加したとき（新規クリップボード検出時）にアイコンをフラッシュ
+        iconFlashCancellable = clipboardViewModel.$items
+            .map(\.count)
+            .removeDuplicates()
+            .dropFirst()            // 起動時の初期値はスキップ
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.flashMenuBarIcon()
+            }
+    }
+
+    // MARK: - Local Monitor
+
+    /// ポップオーバーが開いてアプリがアクティブなときのキー処理
+    /// ⌘⌥⇧H のクローズと ⌘+数字 の再コピーを担当する
+    private func addLocalMonitor() {
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            let f = event.modifierFlags
+
+            // [診断] ⌘⌥ の組み合わせが来たときのみアプリ状態をログ
+            if f.contains(.command) && f.contains(.option) {
+                print("[LocalMonitor] ⌘⌥ keyDown — keyCode:\(event.keyCode) isActive:\(NSApp.isActive) popoverShown:\(self.popover?.isShown ?? false)")
+            }
+
+            // ⌘⌥⇧H：ポップオーバーを閉じる
+            if f.contains(.command) && f.contains(.option) && f.contains(.shift)
+                && !f.contains(.control) && event.keyCode == self.keyCodeH {
+                DispatchQueue.main.async { self.togglePopover() }
+                return nil
+            }
+
+            // ⌘⌥ + ← / →：タブ切替
+            // NSEvent ローカルモニターは ScrollView 等がイベントを消費する前に発火するため
+            // SwiftUI .keyboardShortcut より確実に動作する
+            if f.contains(.command) && f.contains(.option) && !f.contains(.shift) {
+                if event.keyCode == 123 { // ←
+                    self.clipboardViewModel?.switchSourceTab(delta: -1)
+                    return nil
+                }
+                if event.keyCode == 124 { // →
+                    self.clipboardViewModel?.switchSourceTab(delta: 1)
+                    return nil
+                }
+            }
+
+            // ⌘⌥ + 数字（1〜9）：OCRコピー（画像アイテムのみ）
+            // reCopy より先に判定
+            if f.contains(.command) && f.contains(.option) && !f.contains(.shift),
+               let number = kNumberKeyCodes[Int64(event.keyCode)] {
+                self.ocrCopyByIndex(number - 1)
+                return nil
+            }
+
+            // ⌘ + 数字（1〜9）：履歴の再コピー（ポップオーバーが開いているときのみ）
+            if f.contains(.command) && !f.contains(.option) && !f.contains(.shift),
+               let number = kNumberKeyCodes[Int64(event.keyCode)] {
+                self.reCopyByIndex(number - 1)
+                return nil
+            }
+
+            // ⌘,：設定ウィンドウを開く
+            if f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 43 { // kVK_ANSI_Comma
+                self.openSettings()
+                return nil
+            }
+
+            return event
+        }
+    }
+
+    // MARK: - Carbon Global Hotkey
+
+    /// Carbon の RegisterEventHotKey で ⌘⌥⇧H をグローバル登録する
+    /// パーミッション不要・リビルド後も権限が失効しない
+    private func registerCarbonHotKey() {
+        var hotKeyID = EventHotKeyID()
+        hotKeyID.signature = fourCharCode("clph")
+        hotKeyID.id = 1
+
+        var eventSpec = EventTypeSpec(
+            eventClass: UInt32(kEventClassKeyboard),
+            eventKind: UInt32(kEventHotKeyPressed)
+        )
+
+        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
+        let installStatus = InstallEventHandler(
+            GetApplicationEventTarget(),
+            carbonHotKeyHandler,
+            1, &eventSpec,
+            selfPtr,
+            &hotKeyHandlerRef
+        )
+        guard installStatus == noErr else {
+            print("[AppDelegate] ⚠️ Carbon event handler install failed: \(installStatus)")
+            return
+        }
+
+        // ⌘⌥⇧H = kVK_ANSI_H(4), cmdKey | optionKey | shiftKey
+        let modifiers = UInt32(cmdKey | optionKey | shiftKey)
+        let registerStatus = RegisterEventHotKey(
+            UInt32(kVK_ANSI_H),
+            modifiers,
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &hotKeyRef
+        )
+
+        if registerStatus == noErr {
+            print("[AppDelegate] Carbon hotkey registered ✓")
+        } else {
+            print("[AppDelegate] ⚠️ Carbon hotkey registration failed: \(registerStatus)")
+        }
+    }
+
+    private func fourCharCode(_ string: String) -> OSType {
+        string.unicodeScalars.prefix(4).reduce(0) { ($0 << 8) + OSType($1.value) }
+    }
+
+    // MARK: - Re-copy by Shortcut
+
+    func reCopyByIndex(_ index: Int) {
+        guard let popover, popover.isShown else { return }
+        guard let vm = clipboardViewModel else { return }
+        let targets = vm.items.filter { $0.kind == .normal }
+        guard index >= 0, index < targets.count else { return }
+        let item = targets[index]
+        print("Shortcut re-copy index: \(index)")
+        vm.reCopyItem(item)
+    }
+
+    func ocrCopyByIndex(_ index: Int) {
+        guard let popover, popover.isShown else { return }
+        guard let vm = clipboardViewModel else { return }
+        let targets = vm.items.filter { $0.kind == .normal }
+        guard index >= 0, index < targets.count else { return }
+        let item = targets[index]
+        guard item.type == .image else { return }
+        print("Performing OCR for index \(index)")
+        vm.ocrCopy(item)
+    }
+
+    // MARK: - Popover
+
+    private func applyPopoverAppearance() {
+        guard let popover else { return }
+        if #available(macOS 12.0, *) {
+            popover.appearance = AppSettings.resolvedAppearance()
+        }
+    }
+
+    private func observeAppearanceChanges() {
+        NotificationCenter.default.addObserver(
+            forName: AppSettings.appearanceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.applyPopoverAppearance()
+        }
+    }
+
+    static let openSettingsNotification = Notification.Name("AppDelegate.openSettings")
+
+    private func observeOpenSettings() {
+        NotificationCenter.default.addObserver(
+            forName: Self.openSettingsNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.openSettings()
+        }
+    }
+
+    @objc private func openSettings() {
+        SettingsWindowController.shared.show(clipboardViewModel: clipboardViewModel)
+    }
+
+    @objc private func togglePopoverFromButton() {
+        togglePopover()
+    }
+
+    func togglePopover() {
+        print("Toggle popover")
+        guard let popover,
+              let statusItem,
+              let button = statusItem.button else { return }
+        if popover.isShown {
+            popover.performClose(nil)
+        } else {
+            applyPopoverAppearance()
+            NSApp.activate(ignoringOtherApps: true)
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            print("[Popover] shown — isActive:\(NSApp.isActive)")
+        }
+    }
+
+    // MARK: - Icon Flash
+
+    /// クリップボード変更検出時にメニューバーアイコンを青くフラッシュし、
+    /// 800ms かけてテンプレートアイコンにフェードバックする。
+    ///
+    /// ポイント:
+    ///  - button.image を直接差し替えることで NSStatusBarButton 自身がサイズ・スケーリングを管理し、
+    ///    テンプレートアイコンと完全に同じレンダリングになる（CALayer による外部オーバーレイでは
+    ///    スケールが合わないため採用しない）
+    ///  - フェードバックは CATransition(.fade) で button.image 変更時に付与する
+    private func flashMenuBarIcon() {
+        guard let button = statusItem?.button else { return }
+        button.wantsLayer = true
+
+        // 青いアイコン（paletteColors でカラーレンダリング、isTemplate = false）
+        guard let blueImage = NSImage(
+            systemSymbolName: "doc.on.clipboard",
+            accessibilityDescription: nil
+        )?.withSymbolConfiguration(.init(paletteColors: [.systemBlue])) else { return }
+
+        // テンプレートアイコン（通常状態）
+        let templateImage = NSImage(
+            systemSymbolName: "doc.on.clipboard",
+            accessibilityDescription: "ClipFeed"
+        )
+        templateImage?.isTemplate = true
+
+        // 即座に青アイコンへ切り替え
+        button.image = blueImage
+
+        // 800ms かけてテンプレートへフェードバック
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let button = self?.statusItem?.button else { return }
+            let transition = CATransition()
+            transition.type        = .fade
+            transition.duration    = 0.8
+            transition.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            button.layer?.add(transition, forKey: kCATransition)
+            button.image = templateImage
+        }
+    }
+
+    // MARK: - Lifecycle
+
+    func applicationWillTerminate(_ notification: Notification) {
+        clipboardViewModel?.saveToDiskAndWait()
+        if let ref = hotKeyRef { UnregisterEventHotKey(ref) }
+        if let ref = hotKeyHandlerRef { RemoveEventHandler(ref) }
+        if let monitor = localMonitor { NSEvent.removeMonitor(monitor) }
+        iconFlashCancellable?.cancel()
+    }
+}
