@@ -124,7 +124,7 @@ struct SettingsView: View {
                     .font(.headline)
             }
             Section {
-                Text("このアプリは、個人がバイブスで開発したものを、皆さんにもこの便利さをシェアしたい！という思いで運営しています。継続のために応援してくれると嬉しいです！")
+                Text("このアプリは、自分用に作ったお気に入りツールがどこかの誰かの役にも立ったらハッピー！という思いで運営しています。継続のために応援してくれると嬉しいです！")
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
                     NSWorkspace.shared.open(Self.buyMeACoffeeURL)
