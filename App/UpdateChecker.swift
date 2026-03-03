@@ -29,14 +29,14 @@ final class UpdateChecker {
     private func handleResponse(current: String, data: Data?, error: Error?, showNoUpdateAlert: Bool, presentingWindow: NSWindow? = nil) {
         if let error = error {
             if showNoUpdateAlert {
-                showAlert(title: "アップデート確認", message: "バージョン情報の取得に失敗しました。\n\(error.localizedDescription)", presentingWindow: presentingWindow)
+                showAlert(title: L("update_check_title", fallback: "Update"), message: "\(L("update_check_fetch_error", fallback: "Failed to fetch version info."))\n\(error.localizedDescription)", presentingWindow: presentingWindow)
             }
             return
         }
         guard let data = data,
               let info = try? JSONDecoder().decode(VersionInfo.self, from: data) else {
             if showNoUpdateAlert {
-                showAlert(title: "アップデート確認", message: "バージョン情報の取得に失敗しました。", presentingWindow: presentingWindow)
+                showAlert(title: L("update_check_title", fallback: "Update"), message: L("update_check_fetch_error", fallback: "Failed to fetch version info."), presentingWindow: presentingWindow)
             }
             return
         }
@@ -44,7 +44,7 @@ final class UpdateChecker {
         if isVersion(current, lessThan: latest) {
             showUpdateAlert(info: info, presentingWindow: presentingWindow)
         } else if showNoUpdateAlert {
-            showAlert(title: "アップデート確認", message: "現在が最新バージョンです。", presentingWindow: presentingWindow)
+            showAlert(title: L("update_check_title", fallback: "Update"), message: L("update_latest", fallback: "You're on the latest version."), presentingWindow: presentingWindow)
         }
     }
 
@@ -67,13 +67,13 @@ final class UpdateChecker {
 
     private func showUpdateAlert(info: VersionInfo, presentingWindow: NSWindow? = nil) {
         let notes = info.release_notes.map { "\n\n\($0)" } ?? ""
-        let message = "新しいバージョン \(info.latest_version) が利用可能です。\(notes)"
+        let message = String(format: L("update_available_message", fallback: "Version %@ is now available."), info.latest_version) + notes
         let alert = NSAlert()
-        alert.messageText = "アップデートがあります"
+        alert.messageText = L("update_available", fallback: "Update available")
         alert.informativeText = message
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "ダウンロード")
-        alert.addButton(withTitle: "あとで")
+        alert.addButton(withTitle: L("update_download", fallback: "Download"))
+        alert.addButton(withTitle: L("update_later", fallback: "Later"))
         if let win = presentingWindow {
             alert.beginSheetModal(for: win) { response in
                 if response == .alertFirstButtonReturn,
@@ -95,7 +95,7 @@ final class UpdateChecker {
         alert.messageText = title
         alert.informativeText = message
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L("alert_ok", fallback: "OK"))
         if let win = presentingWindow {
             alert.beginSheetModal(for: win) { _ in }
         } else {

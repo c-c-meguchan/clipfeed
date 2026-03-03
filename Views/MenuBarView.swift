@@ -3,19 +3,21 @@ import AppKit
 
 struct MenuBarView: View {
     @EnvironmentObject var viewModel: ClipboardHistoryViewModel
+    @EnvironmentObject var languageObserver: AppLanguageObserver
     @AppStorage("maxItems") private var maxItems: Int = 50
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // ヘッダー
             headerView
-            
+
             // コンテンツエリア（今後実装）
             contentView
-            
+
             // フッター（今後実装）
             footerView
         }
+        .id(languageObserver.currentLanguage + "-\(languageObserver.languageChangeSeed)")
         .frame(width: 400, height: 600)
         .onChange(of: maxItems) { _ in
             viewModel.enforceMaxItems()
@@ -46,7 +48,7 @@ struct MenuBarView: View {
     private var footerView: some View {
         HStack {
             Spacer()
-            Button("閉じる") {
+            Button(L("close", fallback: "Close")) {
                 NSApplication.shared.terminate(nil)
             }
             .buttonStyle(.bordered)
@@ -59,4 +61,5 @@ struct MenuBarView: View {
 #Preview {
     MenuBarView()
         .environmentObject(ClipboardHistoryViewModel())
+        .environmentObject(AppLanguageObserver.shared)
 }

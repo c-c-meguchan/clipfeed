@@ -6,9 +6,24 @@ enum AppSettings {
     static let maxItemCountKey = "maxItems"
     static let launchAtLoginKey = "ClipFeed.launchAtLogin"
     static let appearanceModeKey = "ClipFeed.appearanceMode"
+    static let appLanguageKey = "ClipFeed.appLanguage"
 
     static let maxItemCountOptions = [10, 30, 50, 100]
     static let defaultMaxItemCount = 50
+
+    /// アプリの表示言語: "system"（端末の言語） / "ja" / "en"。日本語・英語以外の端末では system 時は英語にフォールバック。
+    static var appLanguage: String {
+        get {
+            let raw = UserDefaults.standard.string(forKey: appLanguageKey) ?? "system"
+            return ["system", "ja", "en"].contains(raw) ? raw : "system"
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: appLanguageKey)
+            NotificationCenter.default.post(name: Self.appLanguageDidChangeNotification, object: nil)
+        }
+    }
+
+    static let appLanguageDidChangeNotification = Notification.Name("AppSettings.appLanguageDidChange")
 
     /// カラーモード: "system" / "light" / "dark"。デフォルトは "system"（端末の設定に従う）。
     static var appearanceMode: String {
@@ -79,6 +94,7 @@ enum AppSettings {
             maxItemCountKey: defaultMaxItemCount,
             launchAtLoginKey: true,
             appearanceModeKey: "system",
+            appLanguageKey: "system",
         ])
     }
 }

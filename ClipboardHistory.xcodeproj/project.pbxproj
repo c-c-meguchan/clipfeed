@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9E9C06912F571B23007CB805 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E9C06902F571B23007CB805 /* Localization.swift */; };
 		AA000001 /* ClipboardHistoryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002 /* ClipboardHistoryApp.swift */; };
 		AA000003 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000004 /* MenuBarView.swift */; };
 		AA000005 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006 /* ClipboardItem.swift */; };
@@ -28,6 +29,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9E9C06902F571B23007CB805 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		AA000002 /* ClipboardHistoryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryApp.swift; sourceTree = "<group>"; };
 		AA000004 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		AA000006 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItem.swift; sourceTree = "<group>"; };
@@ -48,6 +50,8 @@
 		AA000033 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		AA000036 /* VersionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionInfo.swift; sourceTree = "<group>"; };
 		AA000038 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
+		AA000039 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AA00003A /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +83,7 @@
 				AA000018 /* ViewModels */,
 				AA000019 /* Views */,
 				AA000012 /* Info.plist */,
+				AA00003B /* Localizable.strings */,
 				AA00001A /* Products */,
 				9EC4084B2F53E35D0076ABB3 /* Recovered References */,
 			);
@@ -87,6 +92,7 @@
 		AA000015 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				9E9C06902F571B23007CB805 /* Localization.swift */,
 				AA000002 /* ClipboardHistoryApp.swift */,
 				AA00002C /* AppDelegate.swift */,
 				AA000031 /* AppSettings.swift */,
@@ -181,9 +187,10 @@
 			};
 			buildConfigurationList = AA000020 /* Build configuration list for PBXProject "ClipboardHistory" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = ja;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				ja,
 				en,
 				Base,
 			);
@@ -226,6 +233,7 @@
 				AA000029 /* ClipboardCardView.swift in Sources */,
 				AA00002F /* SettingsWindowController.swift in Sources */,
 				AA000030 /* SettingsView.swift in Sources */,
+				9E9C06912F571B23007CB805 /* Localization.swift in Sources */,
 				AA000032 /* AppSettings.swift in Sources */,
 				AA000035 /* VersionInfo.swift in Sources */,
 				AA000037 /* UpdateChecker.swift in Sources */,
@@ -233,6 +241,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		AA00003B /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				AA000039 /* en */,
+				AA00003A /* ja */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		AA000021 /* Debug */ = {
@@ -373,6 +393,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
 				INFOPLIST_KEY_CFBundleDisplayName = ClipFeed;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -405,6 +426,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
 				INFOPLIST_KEY_CFBundleDisplayName = ClipFeed;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;

@@ -86,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             rootView: MenuBarView()
                 .environmentObject(viewModel)
                 .environmentObject(clipboardViewModel)
+                .environmentObject(AppLanguageObserver.shared)
         )
 
         addLocalMonitor()

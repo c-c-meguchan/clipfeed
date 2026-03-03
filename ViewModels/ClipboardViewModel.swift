@@ -389,7 +389,7 @@ final class ClipboardViewModel: ObservableObject {
                     if let idx = self.items.firstIndex(where: { $0.id == item.id }) {
                         self.items[idx].ocrNoText = true
                     }
-                    showToastMessage("No text found")
+                    showToastMessage(L("toast_no_text", fallback: "No text found"))
                 }
                 return
             }
@@ -475,9 +475,9 @@ final class ClipboardViewModel: ObservableObject {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             try data.write(to: url)
-            showToastMessage("Saved")
+            showToastMessage(L("toast_saved", fallback: "Saved"))
         } catch {
-            showToastMessage("Save failed")
+            showToastMessage(L("toast_save_failed", fallback: "Save failed"))
         }
     }
     
@@ -496,7 +496,7 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     private func showReCopyToast() {
-        showToastMessage("Copied to clipboard")
+        showToastMessage(L("toast_copied", fallback: "Copied to clipboard"))
     }
 
     private func showToastMessage(_ message: String) {

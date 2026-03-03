@@ -87,7 +87,7 @@ struct ClipboardCardView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(item.text ?? "⚠ 2MBを超えているため再コピーできません")
+                    Text(L("oversized_placeholder_message", fallback: "⚠ Cannot re-copy: over 2MB"))
                         .font(.body)
                         .foregroundColor(.secondary)
                         .lineLimit(2)
@@ -172,9 +172,9 @@ struct ClipboardCardView: View {
             }
             .opacity(0.5)
             if index >= 0 && index < 9 {
-                ocrCopyButton(label: "Copy ⌘⌥\(index + 1)")
+                ocrCopyButton(label: "\(L("copy", fallback: "Copy")) ⌘⌥\(index + 1)")
             } else {
-                ocrCopyButton(label: "Copy")
+                ocrCopyButton(label: L("copy", fallback: "Copy"))
             }
         }
         .padding(.vertical, 4)
@@ -194,24 +194,24 @@ struct ClipboardCardView: View {
     private var actionButtons: some View {
         HStack(spacing: 6) {
             if index >= 0 && index < 9 {
-                Button(item.type == .image && item.ocrResult == nil ? "Image ⌘\(index + 1)" : "Copy ⌘\(index + 1)") {
+                Button(item.type == .image && item.ocrResult == nil ? "\(L("image", fallback: "Image")) ⌘\(index + 1)" : "\(L("copy", fallback: "Copy")) ⌘\(index + 1)") {
                     clipboardViewModel.reCopyItem(item)
                 }
                 .buttonStyle(ShortcutButtonStyle())
             } else {
-                Button(item.type == .image && item.ocrResult == nil ? "Image" : "Copy") {
+                Button(item.type == .image && item.ocrResult == nil ? L("image", fallback: "Image") : L("copy", fallback: "Copy")) {
                     clipboardViewModel.reCopyItem(item)
                 }
                 .buttonStyle(ShortcutButtonStyle())
             }
             if item.type == .image && item.ocrResult == nil && !item.ocrNoText {
                 if index >= 0 && index < 9 {
-                    Button("Text ⌘⌥\(index + 1)") {
+                    Button("\(L("text", fallback: "Text")) ⌘⌥\(index + 1)") {
                         clipboardViewModel.ocrCopy(item)
                     }
                     .buttonStyle(ShortcutButtonStyle())
                 } else {
-                    Button("Text") {
+                    Button(L("text", fallback: "Text")) {
                         clipboardViewModel.ocrCopy(item)
                     }
                     .buttonStyle(ShortcutButtonStyle())
@@ -244,7 +244,7 @@ struct ClipboardCardView: View {
     private var createdLabel: some View {
         CreatedLabelContent(
             iconData: item.sourceAppIconData,
-            appName: item.sourceAppName,
+            appName: localizedSourceName(item.sourceAppName) ?? item.sourceAppName,
             createdAt: item.createdAt
         )
         .equatable()

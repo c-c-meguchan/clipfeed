@@ -7,9 +7,17 @@ struct SettingsView: View {
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
 
     enum SidebarItem: String, CaseIterable {
-        case settings = "設定"
-        case about = "アプリバージョン"
-        case support = "開発者を支援"
+        case settings
+        case about
+        case support
+
+        var displayTitle: String {
+            switch self {
+            case .settings: return L("settings", fallback: "Settings")
+            case .about: return L("about_app_version", fallback: "App Version")
+            case .support: return L("support_developer", fallback: "Support Developer")
+            }
+        }
 
         var iconName: String {
             switch self {
@@ -24,13 +32,14 @@ struct SettingsView: View {
     @State private var maxItemCount: Int = AppSettings.maxItemCount
     @State private var launchAtLogin: Bool = AppSettings.launchAtLogin
     @State private var appearanceMode: String = AppSettings.appearanceMode
+    @State private var appLanguage: String = AppSettings.appLanguage
     @State private var showClearConfirm = false
 
     var body: some View {
         NavigationSplitView {
             List(SidebarItem.allCases, id: \.self, selection: $selectedSection) { item in
                 Label {
-                    Text(item.rawValue)
+                    Text(item.displayTitle)
                 } icon: {
                     Image(systemName: item.iconName)
                         .foregroundStyle(.blue)
@@ -58,40 +67,50 @@ struct SettingsView: View {
             maxItemCount = AppSettings.maxItemCount
             launchAtLogin = AppSettings.launchAtLogin
             appearanceMode = AppSettings.appearanceMode
+            appLanguage = AppSettings.appLanguage
         }
-        .confirmationDialog("履歴を全削除", isPresented: $showClearConfirm) {
-            Button("削除", role: .destructive) {
+        .confirmationDialog(L("clear_history_title", fallback: "Clear all history"), isPresented: $showClearConfirm) {
+            Button(L("delete", fallback: "Delete"), role: .destructive) {
                 clipboardViewModel.clearAllHistory()
                 showClearConfirm = false
             }
-            Button("キャンセル", role: .cancel) {
+            Button(L("cancel", fallback: "Cancel"), role: .cancel) {
                 showClearConfirm = false
             }
         } message: {
-            Text("クリップボード履歴をすべて削除します。この操作は取り消せません。")
+            Text(L("clear_history_message", fallback: "All clipboard history will be deleted. This action cannot be undone."))
         }
     }
 
     private var settingsDetail: some View {
         Form {
             Section {
-                Text("設定")
+                Text(L("settings", fallback: "Settings"))
                     .font(.headline)
             }
             Section {
-                Picker("カラーモード", selection: $appearanceMode) {
-                    Text("端末の設定").tag("system")
-                    Text("ライト").tag("light")
-                    Text("ダーク").tag("dark")
+                Picker(L("app_language", fallback: "App language"), selection: $appLanguage) {
+                    Text(L("app_language_system", fallback: "System language (default)")).tag("system")
+                    Text(L("app_language_ja", fallback: "Japanese")).tag("ja")
+                    Text(L("app_language_en", fallback: "English")).tag("en")
+                }
+                .onChange(of: appLanguage) { newValue in
+                    AppSettings.appLanguage = newValue
+                }
+
+                Picker(L("color_mode", fallback: "Color mode"), selection: $appearanceMode) {
+                    Text(L("color_mode_system", fallback: "System settings")).tag("system")
+                    Text(L("color_mode_light", fallback: "Light")).tag("light")
+                    Text(L("color_mode_dark", fallback: "Dark")).tag("dark")
                 }
                 .onChange(of: appearanceMode) { newValue in
                     AppSettings.appearanceMode = newValue
                     AppSettings.applyAppearance()
                 }
 
-                Picker("最大保存件数", selection: $maxItemCount) {
+                Picker(L("max_items_label", fallback: "Max items to save"), selection: $maxItemCount) {
                     ForEach(AppSettings.maxItemCountOptions, id: \.self) { n in
-                        Text("\(n)件").tag(n)
+                        Text(String(format: L("items_count_format", fallback: "%d items"), n)).tag(n)
                     }
                 }
                 .onChange(of: maxItemCount) { newValue in
@@ -99,7 +118,7 @@ struct SettingsView: View {
                     clipboardViewModel.applyMaxItemCountFromSettings()
                 }
 
-                Toggle("起動時に自動起動", isOn: $launchAtLogin)
+                Toggle(L("launch_at_login", fallback: "Launch at startup"), isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { newValue in
                         AppSettings.launchAtLogin = newValue
                         LaunchAtLoginHelper.setEnabled(newValue)
@@ -108,7 +127,7 @@ struct SettingsView: View {
                 Button(role: .destructive) {
                     showClearConfirm = true
                 } label: {
-                    Text("履歴を全削除")
+                    Text(L("clear_history_button", fallback: "Clear all history"))
                 }
             }
         }
@@ -120,18 +139,18 @@ struct SettingsView: View {
     private var supportDetail: some View {
         Form {
             Section {
-                Text("開発者を支援")
+                Text(L("support_developer", fallback: "Support Developer"))
                     .font(.headline)
             }
             Section {
-                Text("このアプリは、自分用に作ったお気に入りツールがどこかの誰かの役にも立ったらハッピー！という思いで運営しています。継続のために応援してくれると嬉しいです！")
+                Text(L("support_developer_message", fallback: "This app is made with the hope that a favorite tool for myself might be useful to someone else. Your support helps keep it going!"))
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
                     NSWorkspace.shared.open(Self.buyMeACoffeeURL)
                 } label: {
                     HStack {
                         Image(systemName: "cup.and.saucer.fill")
-                        Text("コーヒーを送る")
+                        Text(L("buy_me_coffee", fallback: "Buy me a coffee"))
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -144,17 +163,17 @@ struct SettingsView: View {
     private var aboutDetail: some View {
         Form {
             Section {
-                Text("アプリバージョン")
+                Text(L("about_app_version", fallback: "App Version"))
                     .font(.headline)
             }
             Section {
                 HStack {
-                    Text("バージョン")
+                    Text(L("app_version", fallback: "Version"))
                     Spacer()
                     Text(Bundle.main.appVersion)
                         .foregroundStyle(.secondary)
                 }
-                Button("アップデートを確認") {
+                Button(L("check_update", fallback: "Check for Updates")) {
                     UpdateChecker.shared.checkForUpdates(showNoUpdateAlert: true, presentingWindow: SettingsWindowController.shared.window)
                 }
             }

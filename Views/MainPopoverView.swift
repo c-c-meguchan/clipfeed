@@ -90,10 +90,10 @@ struct MainPopoverView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 // 「すべて」チップ
-                sourceChip(name: "すべて", iconData: nil, source: nil)
+                sourceChip(name: L("filter_all", fallback: "All"), iconData: nil, source: nil)
                 // コピー元別チップ
                 ForEach(sourceTabs, id: \.name) { tab in
-                    sourceChip(name: tab.name, iconData: tab.iconData, source: tab.name)
+                    sourceChip(name: localizedSourceName(tab.name) ?? tab.name, iconData: tab.iconData, source: tab.name)
                 }
             }
             .padding(.horizontal, 12)
