@@ -325,34 +325,27 @@ final class ClipboardViewModel: ObservableObject {
         }
     }
     
-    /// ペーストボード由来の画像 Data を NSImage 経由で PNG または JPEG(0.8) に再エンコードする。
-    /// TIFF 等の非圧縮巨大データを永続化しないため。
+    /// ペーストボード由来の画像 Data を保存用に正規化する。
+    /// - PNG/JPEG はそのまま返す（画質・色空間・Retina解像度を維持）。
+    /// - TIFF 等は NSBitmapImageRep から直接 PNG 出力に変換するのみ（再描画・ポイントサイズ変換は行わない）。
     private static func reencodeImageData(_ data: Data) -> Data? {
-        guard let nsImage = NSImage(data: data) else { return nil }
-        let size = nsImage.size
-        guard size.width > 0, size.height > 0 else { return nil }
-
-        guard let rep = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: Int(size.width),
-            pixelsHigh: Int(size.height),
-            bitsPerSample: 8,
-            samplesPerPixel: 4,
-            hasAlpha: true,
-            isPlanar: false,
-            colorSpaceName: .deviceRGB,
-            bytesPerRow: 0,
-            bitsPerPixel: 0
-        ) else { return nil }
-        rep.size = size
-
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-        nsImage.draw(at: .zero, from: NSRect(origin: .zero, size: size), operation: .copy, fraction: 1.0)
-        NSGraphicsContext.restoreGraphicsState()
-
-        // アルファの有無にかかわらず PNG のみ保存（仕様）
+        if isPNG(data) || isJPEG(data) {
+            return data
+        }
+        // TIFF 等: デコード済みの NSBitmapImageRep から PNG を出力するだけ。draw は使わない。
+        guard let rep = NSBitmapImageRep(data: data) else { return nil }
         return rep.representation(using: .png, properties: [:])
+    }
+
+    private static func isPNG(_ data: Data) -> Bool {
+        let sig: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        guard data.count >= sig.count else { return false }
+        return data.prefix(sig.count).elementsEqual(sig)
+    }
+
+    private static func isJPEG(_ data: Data) -> Bool {
+        guard data.count >= 3 else { return false }
+        return data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF
     }
 
     private static func makeThumbnailData(from imageData: Data, maxSize: CGFloat) -> Data? {
