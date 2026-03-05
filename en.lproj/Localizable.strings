@@ -44,3 +44,4 @@
 "update_latest" = "You're on the latest version.";
 "alert_ok" = "OK";
 "update_available_message" = "Version %@ is now available.";
+"search_placeholder" = "Search clipboard";

@@ -27,6 +27,7 @@ private let embeddedJA: [String: String] = [
     "update_check_fetch_error": "バージョン情報の取得に失敗しました。", "update_available": "アップデートがあります", "update_download": "ダウンロード",
     "update_later": "あとで", "update_latest": "現在が最新バージョンです。", "alert_ok": "OK",
     "update_available_message": "新しいバージョン %@ が利用可能です。", "copied_from": "コピー元",
+    "search_placeholder": "コピー履歴を検索",
 ]
 
 private enum StringsCache {

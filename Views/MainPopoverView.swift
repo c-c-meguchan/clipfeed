@@ -10,9 +10,19 @@ private struct SourceTab: Equatable {
     }
 }
 
+private struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct MainPopoverView: View {
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
     @Namespace private var cardAnimation
+    @State private var lastFocusedIndex: Int?
+    @FocusState private var searchFieldFocused: Bool
+    @State private var scrollOffset: CGFloat = 0
 
     /// items から sourceAppName を最新出現順で重複除去し、アイコンデータ付きで生成
     private var sourceTabs: [SourceTab] {
@@ -37,31 +47,109 @@ struct MainPopoverView: View {
         Dictionary(uniqueKeysWithValues: shortcutTargets.enumerated().map { ($0.element.id, $0.offset) })
     }
 
+    /// 表示順（displayedItems）におけるインデックスを item.id から逆引きするマップ
+    private var indexByID: [UUID: Int] {
+        Dictionary(uniqueKeysWithValues: clipboardViewModel.displayedItems.enumerated().map { ($0.element.id, $0.offset) })
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             sourceTabBar
-            TextField("Search clipboard", text: $clipboardViewModel.searchText)
-                .textFieldStyle(.roundedBorder)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+            // スクロール位置に応じて少しだけ隠れる検索フィールド（フィードの上部に「浮かぶ」イメージ）
+            let hideProgress = min(max(-scrollOffset / 40.0, 0), 1)   // 下方向に 40pt スクロールでほぼ消える
+            let yOffset = -hideProgress * 8
+
+            TextField(
+                L("search_placeholder", fallback: "Search clipboard"),
+                text: Binding(
+                    get: { clipboardViewModel.searchText },
+                    set: { clipboardViewModel.updateSearchText($0) }
+                )
+            )
+            .textFieldStyle(.plain)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8) // ほんの少し高さを大きく
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(NSColor.windowBackgroundColor).opacity(1.0))
+            )
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, 2)
+            .focused($searchFieldFocused)
+            .opacity(1 - hideProgress)
+            .offset(y: yOffset)
+            .onChange(of: searchFieldFocused) { focused in
+                clipboardViewModel.isSearchFocused = focused
+                if focused {
+                    clipboardViewModel.focusArea = .search
+                    // 検索窓にフォーカスがある間はフィード側のフォーカスを外す
+                    clipboardViewModel.focusedItemID = nil
+                }
+            }
             ZStack {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(clipboardViewModel.displayedItems) { item in
-                                let shortcutIndex = shortcutIndexByID[item.id] ?? -1
-                                VStack(spacing: 0) {
-                                    ClipboardCardView(item: item, index: shortcutIndex)
-                                    Divider()
+                            // スクロール位置計測用（先頭付近のオフセットを取得）
+                            GeometryReader { geo in
+                                Color.clear
+                                    .preference(
+                                        key: ScrollOffsetPreferenceKey.self,
+                                        value: geo.frame(in: .named("clipboardScroll")).minY
+                                    )
+                            }
+                            .frame(height: 0)
+
+                            if clipboardViewModel.displayedItems.isEmpty {
+                                VStack(spacing: 12) {
+                                    Text("履歴が見つかりません")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                    Button("⏎ 戻る") {
+                                        // 検索状態をリセットしてナビゲーションモードに戻す
+                                        clipboardViewModel.updateSearchText("")
+                                        clipboardViewModel.focusArea = .feed
+                                        clipboardViewModel.ensureFeedFocus()
+                                        searchFieldFocused = false
+                                    }
+                                    .buttonStyle(.borderedProminent)
                                 }
-                                .animation(nil, value: clipboardViewModel.items)
-                                .matchedGeometryEffect(id: item.id, in: cardAnimation)
+                                .frame(maxWidth: .infinity, minHeight: 160)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, 40)
+                            } else {
+                                ForEach(clipboardViewModel.displayedItems) { item in
+                                    let shortcutIndex = shortcutIndexByID[item.id] ?? -1
+                                    VStack(spacing: 0) {
+                                        ClipboardCardView(item: item, index: shortcutIndex)
+                                        Divider()
+                                    }
+                                    .animation(nil, value: clipboardViewModel.items)
+                                    .matchedGeometryEffect(id: item.id, in: cardAnimation)
+                                }
                             }
                         }
+                    }
+                    .coordinateSpace(name: "clipboardScroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        scrollOffset = value
                     }
                     // ポップオーバーを開いたとき → 最新アイテムへスクロール
                     .onAppear {
                         DispatchQueue.main.async {
+                            // 初期状態では必ずフィード側にフォーカスを置き、検索フィールドのフォーカスを外す
+                            searchFieldFocused = false
+                            clipboardViewModel.isSearchFocused = false
+                            clipboardViewModel.focusArea = .feed
+                            // 最新アイテム（一番下）にフォーカス
+                            let lastID = clipboardViewModel.displayedItems.last?.id
+                            clipboardViewModel.focusedItemID = lastID
+                            if let lastID, let idx = indexByID[lastID] {
+                                lastFocusedIndex = idx
+                            } else {
+                                lastFocusedIndex = nil
+                            }
                             scrollToLatest(proxy)
                         }
                     }
@@ -79,6 +167,21 @@ struct MainPopoverView: View {
                             scrollToLatest(proxy)
                         }
                     }
+                    // フォーカス移動時: フォーカス中アイテムが常に表示領域内に収まるようにする
+                    .onChange(of: clipboardViewModel.focusedItemID) { id in
+                        guard let id else { return }
+                        guard let newIndex = indexByID[id] else { return }
+                        let previous = lastFocusedIndex
+                        lastFocusedIndex = newIndex
+                        // 初回はスクロールしない（onAppear 側で処理）
+                        guard let prev = previous, prev != newIndex else { return }
+                        let anchor: UnitPoint = newIndex > prev ? .bottom : .top
+                        DispatchQueue.main.async {
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                proxy.scrollTo(id, anchor: anchor)
+                            }
+                        }
+                    }
                 }
 
                 if clipboardViewModel.showToast {
@@ -91,6 +194,18 @@ struct MainPopoverView: View {
                 }
             }
             .animation(.easeOut(duration: 0.12), value: clipboardViewModel.showToast)
+            .onMoveCommand { direction in
+                clipboardViewModel.moveFocus(direction)
+            }
+            .onChange(of: clipboardViewModel.focusArea) { area in
+                switch area {
+                case .search:
+                    searchFieldFocused = true
+                case .feed:
+                    searchFieldFocused = false
+                    clipboardViewModel.ensureFeedFocus()
+                }
+            }
         }
     }
 

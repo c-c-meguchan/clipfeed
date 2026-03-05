@@ -163,6 +163,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return nil
             }
 
+            // Tab: 検索窓とフィードのフォーカスを切り替え
+            if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 48 { // kVK_Tab
+                if let vm = self.clipboardViewModel {
+                    vm.focusArea = (vm.focusArea == .feed) ? .search : .feed
+                }
+                return nil
+            }
+
+            // Enter: フォーカス中のアイテムをコピー（ナビゲーション／検索共通）
+            if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 36 { // kVK_Return
+                if let vm = self.clipboardViewModel, vm.focusArea == .feed, !vm.isSearchFocused {
+                    vm.copyFocusedItem()
+                    return nil
+                }
+            }
+
+            // ↑ / ↓ : navigation モード時のみフォーカス移動
+            if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift),
+               let vm = self.clipboardViewModel,
+               vm.inputMode == .navigation,
+               vm.focusArea == .feed {
+                if event.keyCode == 126 { // 上矢印
+                    vm.moveFocus(.up)
+                    return nil
+                }
+                if event.keyCode == 125 { // 下矢印
+                    vm.moveFocus(.down)
+                    return nil
+                }
+            }
+
             return event
         }
     }

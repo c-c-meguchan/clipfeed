@@ -47,6 +47,10 @@ struct ClipboardCardView: View {
         return f
     }()
 
+    private var isFocused: Bool {
+        clipboardViewModel.focusedItemID == item.id
+    }
+
     /// 親カード（通常コピー）のハイライト判定 — .parent(item.id) の完全一致のみ
     private var isCardHighlighted: Bool {
         clipboardViewModel.highlightedTarget == .parent(item.id)
@@ -152,6 +156,10 @@ struct ClipboardCardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.accentColor.opacity(isFocused ? 0.9 : 0), lineWidth: 2)
+        )
     }
 
     private func ocrResultView(_ text: String) -> some View {

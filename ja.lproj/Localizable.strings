@@ -44,3 +44,4 @@
 "update_latest" = "現在が最新バージョンです。";
 "alert_ok" = "OK";
 "update_available_message" = "新しいバージョン %@ が利用可能です。";
+"search_placeholder" = "コピー履歴を検索";
