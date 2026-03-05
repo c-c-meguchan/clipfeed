@@ -40,6 +40,10 @@ struct MainPopoverView: View {
     var body: some View {
         VStack(spacing: 0) {
             sourceTabBar
+            TextField("Search clipboard", text: $clipboardViewModel.searchText)
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
             ZStack {
                 ScrollViewReader { proxy in
                     ScrollView {

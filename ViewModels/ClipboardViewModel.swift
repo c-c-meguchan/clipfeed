@@ -16,13 +16,30 @@ final class ClipboardViewModel: ObservableObject {
     @Published var toastMessage: String = ""
     @Published var selectedSource: String?
     @Published var highlightedTarget: CopyTarget?
+    @Published var searchText: String = ""
 
     @AppStorage("maxItems") private var maxItems: Int = 50
 
-    /// コピー元別フィルタ後のアイテム
+    /// コピー元別フィルタ + 検索適用後のアイテム
     var filteredItems: [ClipboardItem] {
-        guard let source = selectedSource else { return items }
-        return items.filter { $0.sourceAppName == source }
+        // まずタブ（コピー元）でフィルタ
+        let bySource: [ClipboardItem]
+        if let source = selectedSource {
+            bySource = items.filter { $0.sourceAppName == source }
+        } else {
+            bySource = items
+        }
+
+        // 検索テキストが空なら従来どおり
+        guard !searchText.isEmpty else { return bySource }
+        let query = searchText
+
+        // text / plainText と 読み込み済み OCR テキストを検索対象にする
+        return bySource.filter { item in
+            let text = item.plainText ?? item.text ?? ""
+            let ocr = item.ocrText ?? item.ocrResult ?? ""
+            return text.localizedCaseInsensitiveContains(query) || ocr.localizedCaseInsensitiveContains(query)
+        }
     }
 
     /// View に渡す表示順（古い順 → 最新が末尾 = チャット型）
