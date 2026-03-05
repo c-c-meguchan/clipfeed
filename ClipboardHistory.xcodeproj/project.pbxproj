@@ -39,7 +39,7 @@
 		AA00000C /* OCRManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRManager.swift; sourceTree = "<group>"; };
 		AA00000E /* ClipboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitor.swift; sourceTree = "<group>"; };
 		AA000010 /* ClipboardHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryViewModel.swift; sourceTree = "<group>"; };
-		AA000011 /* ClipboardHistory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClipboardHistory.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA000011 /* ClipFeed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClipFeed.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA000026 /* ClipboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardViewModel.swift; sourceTree = "<group>"; };
 		AA000028 /* MainPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPopoverView.swift; sourceTree = "<group>"; };
@@ -148,7 +148,7 @@
 		AA00001A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AA000011 /* ClipboardHistory.app */,
+				AA000011 /* ClipFeed.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -170,7 +170,7 @@
 			);
 			name = ClipboardHistory;
 			productName = ClipboardHistory;
-			productReference = AA000011 /* ClipboardHistory.app */;
+			productReference = AA000011 /* ClipFeed.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -408,7 +408,7 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "jp.c-c-meguchan.clipfeed";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = ClipFeed;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -441,7 +441,7 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "jp.c-c-meguchan.clipfeed";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = ClipFeed;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};

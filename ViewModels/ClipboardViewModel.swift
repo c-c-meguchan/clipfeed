@@ -65,10 +65,10 @@ final class ClipboardViewModel: ObservableObject {
     /// JSON 全体のサイズ上限（100MB）。performWrite 内でのみ参照。UI件数とは別の安全制限。
     private static let maxTotalJSON = 100_000_000  // 100MB
 
-    /// Application Support / アプリ名 / clipboard.json
+    /// Application Support / ClipFeed / clipboard.json
     private static var persistenceFileURL: URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appendingPathComponent("ClipboardHistory", isDirectory: true)
+        let dir = support.appendingPathComponent("ClipFeed", isDirectory: true)
         return dir.appendingPathComponent("clipboard.json", isDirectory: false)
     }
 
