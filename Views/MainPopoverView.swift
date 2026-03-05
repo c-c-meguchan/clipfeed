@@ -27,10 +27,14 @@ struct MainPopoverView: View {
         return result
     }
     
+    /// 現在のタブでショートカット対象となるアイテム（kind == .normal のみ、最大9件／最新順）
+    private var shortcutTargets: [ClipboardItem] {
+        Array(clipboardViewModel.filteredItems.filter { $0.kind == .normal }.prefix(9))
+    }
+    
     /// ショートカット用の index（0..<9）を item.id で O(1) 参照するためのマップ。body 内で 1 回だけ O(n) 計算し、ForEach 内では O(n²) にならないようにする。
     private var shortcutIndexByID: [UUID: Int] {
-        let normal = clipboardViewModel.items.filter { $0.kind == .normal }
-        return Dictionary(uniqueKeysWithValues: normal.enumerated().map { ($0.element.id, $0.offset) })
+        Dictionary(uniqueKeysWithValues: shortcutTargets.enumerated().map { ($0.element.id, $0.offset) })
     }
 
     var body: some View {
