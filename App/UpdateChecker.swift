@@ -1,15 +1,19 @@
 import Foundation
 import AppKit
 
-/// 軽量アップデート確認。Sparkle は使わず、versionURL の JSON を取得して比較する。
+/// 軽量アップデート確認。GitHub Releases の latest を取得し、バージョン比較して .dmg を開く。
 final class UpdateChecker {
     static let shared = UpdateChecker()
 
     /// 設定ウィンドウ(200)より前面に出すためのレベル
     private static let alertWindowLevel = NSWindow.Level(rawValue: 201)
 
-    /// バージョン情報を取得する URL（要差し替え）
-    private let versionURL = URL(string: "https://c-c-meguchan.github.io/clipfeed-site/version.json")!
+    /// GitHub の owner/repo（要差し替え）
+    private let githubRepository = "c-c-meguchan/clipfeed"
+
+    private var latestReleaseURL: URL {
+        URL(string: "https://api.github.com/repos/\(githubRepository)/releases/latest")!
+    }
 
     private init() {}
 
@@ -18,7 +22,9 @@ final class UpdateChecker {
     func checkForUpdates(showNoUpdateAlert: Bool = false, presentingWindow: NSWindow? = nil) {
         let current = Bundle.main.appVersion
         let window = presentingWindow
-        let task = URLSession.shared.dataTask(with: versionURL) { [weak self] data, _, error in
+        var request = URLRequest(url: latestReleaseURL)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 self?.handleResponse(current: current, data: data, error: error, showNoUpdateAlert: showNoUpdateAlert, presentingWindow: window)
             }
@@ -34,7 +40,8 @@ final class UpdateChecker {
             return
         }
         guard let data = data,
-              let info = try? JSONDecoder().decode(VersionInfo.self, from: data) else {
+              let release = try? JSONDecoder().decode(GitHubRelease.self, from: data),
+              let info = release.toVersionInfo() else {
             if showNoUpdateAlert {
                 showAlert(title: L("update_check_title", fallback: "Update"), message: L("update_check_fetch_error", fallback: "Failed to fetch version info."), presentingWindow: presentingWindow)
             }
@@ -106,6 +113,30 @@ final class UpdateChecker {
 
     private func applyAlertWindowLevel(_ alert: NSAlert) {
         alert.window.level = Self.alertWindowLevel
+    }
+}
+
+// MARK: - GitHub Releases API
+
+private struct GitHubRelease: Decodable {
+    let tag_name: String
+    let body: String?
+    let assets: [Asset]
+
+    struct Asset: Decodable {
+        let name: String
+        let browser_download_url: String
+    }
+
+    /// tag_name（先頭の "v" を除く）と .dmg の URL を VersionInfo に変換。.dmg がなければ nil。
+    func toVersionInfo() -> VersionInfo? {
+        let version = tag_name.hasPrefix("v") ? String(tag_name.dropFirst()) : tag_name
+        guard let dmg = assets.first(where: { $0.name.lowercased().hasSuffix(".dmg") }) else { return nil }
+        return VersionInfo(
+            latest_version: version,
+            download_url: dmg.browser_download_url,
+            release_notes: body
+        )
     }
 }
 
