@@ -30,27 +30,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		9E9C06902F571B23007CB805 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		9E9C06902F571B23007CB805 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/Localization.swift"; sourceTree = SOURCE_ROOT; };
 		AA000002 /* ClipboardHistoryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryApp.swift; sourceTree = "<group>"; };
-		AA000004 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
-		AA000006 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItem.swift; sourceTree = "<group>"; };
-		AA000008 /* Statistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Statistics.swift; sourceTree = "<group>"; };
-		AA00000A /* ClipboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardManager.swift; sourceTree = "<group>"; };
-		AA00000C /* OCRManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRManager.swift; sourceTree = "<group>"; };
-		AA00000E /* ClipboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitor.swift; sourceTree = "<group>"; };
-		AA000010 /* ClipboardHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryViewModel.swift; sourceTree = "<group>"; };
+		AA000004 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/MenuBarView.swift"; sourceTree = SOURCE_ROOT; };
+		AA000006 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/ClipboardItem.swift"; sourceTree = SOURCE_ROOT; };
+		AA000008 /* Statistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/Statistics.swift"; sourceTree = SOURCE_ROOT; };
+		AA00000A /* ClipboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/ClipboardManager.swift"; sourceTree = SOURCE_ROOT; };
+		AA00000C /* OCRManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/OCRManager.swift"; sourceTree = SOURCE_ROOT; };
+		AA00000E /* ClipboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/ClipboardMonitor.swift"; sourceTree = SOURCE_ROOT; };
+		AA000010 /* ClipboardHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewModels/ClipboardHistoryViewModel.swift"; sourceTree = SOURCE_ROOT; };
 		AA000011 /* ClipFeed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClipFeed.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AA000026 /* ClipboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardViewModel.swift; sourceTree = "<group>"; };
-		AA000028 /* MainPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPopoverView.swift; sourceTree = "<group>"; };
-		AA00002A /* ClipboardCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardCardView.swift; sourceTree = "<group>"; };
+		AA000026 /* ClipboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewModels/ClipboardViewModel.swift"; sourceTree = SOURCE_ROOT; };
+		AA000028 /* MainPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/MainPopoverView.swift"; sourceTree = SOURCE_ROOT; };
+		AA00002A /* ClipboardCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/ClipboardCardView.swift"; sourceTree = SOURCE_ROOT; };
 		AA00002C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		AA00002D /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
-		AA00002E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		AA000031 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		AA00002D /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/SettingsWindowController.swift"; sourceTree = SOURCE_ROOT; };
+		AA00002E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SettingsView.swift"; sourceTree = SOURCE_ROOT; };
+		AA000031 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/AppSettings.swift"; sourceTree = SOURCE_ROOT; };
 		AA000033 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
-		AA000036 /* VersionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionInfo.swift; sourceTree = "<group>"; };
-		AA000038 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
+		AA000036 /* VersionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/VersionInfo.swift"; sourceTree = SOURCE_ROOT; };
+		AA000038 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/UpdateChecker.swift"; sourceTree = SOURCE_ROOT; };
 		AA000039 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AA00003A /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AA00003C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -80,11 +80,9 @@
 			isa = PBXGroup;
 			children = (
 				AA00003C /* Assets.xcassets */,
-				AA000015 /* App */,
-				AA000016 /* Models */,
-				AA000017 /* Managers */,
-				AA000018 /* ViewModels */,
-				AA000019 /* Views */,
+				AA00004B /* App */,
+				AA000040 /* Core */,
+				AA000044 /* Features */,
 				AA000012 /* Info.plist */,
 				AA00003B /* Localizable.strings */,
 				AA00001A /* Products */,
@@ -92,40 +90,89 @@
 			);
 			sourceTree = "<group>";
 		};
-		AA000015 /* App */ = {
+		AA00004B /* App */ = {
 			isa = PBXGroup;
 			children = (
-				9E9C06902F571B23007CB805 /* Localization.swift */,
 				AA000002 /* ClipboardHistoryApp.swift */,
 				AA00002C /* AppDelegate.swift */,
-				AA000031 /* AppSettings.swift */,
-				AA000038 /* UpdateChecker.swift */,
-				AA00002D /* SettingsWindowController.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
 		};
-		AA000016 /* Models */ = {
+		AA000040 /* Core */ = {
 			isa = PBXGroup;
 			children = (
-				AA000006 /* ClipboardItem.swift */,
-				AA000008 /* Statistics.swift */,
-				AA000036 /* VersionInfo.swift */,
+				AA000041 /* Localization */,
+				AA000042 /* Update */,
+				AA000043 /* OCR */,
 			);
-			path = Models;
+			path = Core;
 			sourceTree = "<group>";
 		};
-		AA000017 /* Managers */ = {
+		AA000041 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+				9E9C06902F571B23007CB805 /* Localization.swift */,
+			);
+			path = Localization;
+			sourceTree = "<group>";
+		};
+		AA000042 /* Update */ = {
+			isa = PBXGroup;
+			children = (
+				AA000038 /* UpdateChecker.swift */,
+				AA000036 /* VersionInfo.swift */,
+			);
+			path = Update;
+			sourceTree = "<group>";
+		};
+		AA000043 /* OCR */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000C /* OCRManager.swift */,
+			);
+			path = OCR;
+			sourceTree = "<group>";
+		};
+		AA000044 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				AA000045 /* Clipboard */,
+				AA00004A /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		AA000045 /* Clipboard */ = {
+			isa = PBXGroup;
+			children = (
+				AA000046 /* Managers */,
+				AA000047 /* Models */,
+				AA000048 /* ViewModels */,
+				AA000049 /* Views */,
+			);
+			path = Clipboard;
+			sourceTree = "<group>";
+		};
+		AA000046 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
 				AA00000A /* ClipboardManager.swift */,
-				AA00000C /* OCRManager.swift */,
 				AA00000E /* ClipboardMonitor.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
 		};
-		AA000018 /* ViewModels */ = {
+		AA000047 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA000006 /* ClipboardItem.swift */,
+				AA000008 /* Statistics.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AA000048 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
 				AA000010 /* ClipboardHistoryViewModel.swift */,
@@ -134,15 +181,24 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		AA000019 /* Views */ = {
+		AA000049 /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				AA000004 /* MenuBarView.swift */,
 				AA000028 /* MainPopoverView.swift */,
 				AA00002A /* ClipboardCardView.swift */,
-				AA00002E /* SettingsView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		AA00004A /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				AA00002E /* SettingsView.swift */,
+				AA00002D /* SettingsWindowController.swift */,
+				AA000031 /* AppSettings.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		AA00001A /* Products */ = {
