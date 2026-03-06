@@ -165,7 +165,7 @@ struct MenuBarView: View {
             Button {
                 NotificationCenter.default.post(name: AppDelegate.openSettingsNotification, object: nil)
             } label: {
-                Image(systemName: "gearshape")
+                Image(systemName: "gearshape.fill")
             }
             .buttonStyle(.plain)
             Button {
