@@ -8,12 +8,14 @@ struct SettingsView: View {
 
     enum SidebarItem: String, CaseIterable {
         case settings
+        case shortcuts
         case about
         case support
 
         var displayTitle: String {
             switch self {
             case .settings: return L("settings", fallback: "Settings")
+            case .shortcuts: return L("shortcuts", fallback: "Shortcuts")
             case .about: return L("about_app_version", fallback: "App Version")
             case .support: return L("support_developer", fallback: "Support Developer")
             }
@@ -22,6 +24,7 @@ struct SettingsView: View {
         var iconName: String {
             switch self {
             case .settings: return "gearshape.fill"
+            case .shortcuts: return "keyboard"
             case .about: return "info.circle.fill"
             case .support: return "heart.fill"
             }
@@ -53,6 +56,8 @@ struct SettingsView: View {
                 switch selectedSection {
                 case .settings:
                     settingsDetail
+                case .shortcuts:
+                    shortcutsDetail
                 case .about:
                     aboutDetail
                 case .support:
@@ -132,6 +137,39 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var shortcutsDetail: some View {
+        Form {
+            Section {
+                Text(L("shortcuts", fallback: "Shortcuts"))
+                    .font(.headline)
+            }
+            Section {
+                shortcutRow(keys: "⌘⌥⇧H", descriptionKey: "shortcut_toggle_popover", fallback: "Open / close popover")
+                shortcutRow(keys: "⌘⌥ ← / →", descriptionKey: "shortcut_switch_tab", fallback: "Switch copy source tab")
+                shortcutRow(keys: "⌘ 1–9", descriptionKey: "shortcut_recopy", fallback: "Re-copy item (when popover is open)")
+                shortcutRow(keys: "⌘⌥ 1–9", descriptionKey: "shortcut_ocr_copy", fallback: "OCR copy from image (when popover is open)")
+                shortcutRow(keys: "⌘ ,", descriptionKey: "shortcut_open_settings", fallback: "Open Settings")
+                shortcutRow(keys: "Tab", descriptionKey: "shortcut_focus_search_feed", fallback: "Switch focus between search and feed")
+                shortcutRow(keys: "↩", descriptionKey: "shortcut_copy_focused", fallback: "Copy focused item")
+                shortcutRow(keys: "Esc", descriptionKey: "shortcut_clear_search", fallback: "Clear search and return")
+                shortcutRow(keys: "↑ / ↓", descriptionKey: "shortcut_move_focus", fallback: "Move focus up / down")
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func shortcutRow(keys: String, descriptionKey: String, fallback: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(keys)
+                .font(.system(.body, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 100, alignment: .leading)
+            Text(L(descriptionKey, fallback: fallback))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, 2)
     }
 
     private static let buyMeACoffeeURL = URL(string: "https://buymeacoffee.com/c.c.meguchan")!

@@ -28,6 +28,17 @@ private let embeddedJA: [String: String] = [
     "update_later": "あとで", "update_latest": "現在が最新バージョンです。", "alert_ok": "OK",
     "update_available_message": "新しいバージョン %@ が利用可能です。", "copied_from": "コピー元",
     "search_placeholder": "コピー履歴を検索",
+    "shortcuts": "ショートカット",
+    "shortcut_toggle_popover": "ClipFeedを開く / 閉じる",
+    "shortcut_switch_tab": "コピー元タブの切り替え",
+    "shortcut_recopy": "履歴を再コピー",
+    "shortcut_ocr_copy": "画像内のテキストを読み込んでコピー",
+    "shortcut_open_settings": "設定を開く",
+    "shortcut_section_in_popover": "ポップオーバー内",
+    "shortcut_focus_search_feed": "検索窓とフィードのフォーカスを切り替え",
+    "shortcut_copy_focused": "フォーカス中のアイテムをコピー",
+    "shortcut_clear_search": "検索をやめて戻る",
+    "shortcut_move_focus": "フォーカスを上 / 下に移動",
 ]
 
 private enum StringsCache {

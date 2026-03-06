@@ -45,3 +45,14 @@
 "alert_ok" = "OK";
 "update_available_message" = "Version %@ is now available.";
 "search_placeholder" = "Search clipboard";
+"shortcuts" = "Shortcuts";
+"shortcut_toggle_popover" = "Open / close popover";
+"shortcut_switch_tab" = "Switch copy source tab";
+"shortcut_recopy" = "Re-copy item (when popover is open)";
+"shortcut_ocr_copy" = "OCR copy from image (when popover is open)";
+"shortcut_open_settings" = "Open Settings";
+"shortcut_section_in_popover" = "In popover";
+"shortcut_focus_search_feed" = "Switch focus between search and feed";
+"shortcut_copy_focused" = "Copy focused item";
+"shortcut_clear_search" = "Clear search and return";
+"shortcut_move_focus" = "Move focus up / down";
