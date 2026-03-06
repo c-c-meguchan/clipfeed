@@ -48,6 +48,8 @@
 "update_download" = "Download";
 "update_later" = "Later";
 "update_latest" = "You're on the latest version.";
+"update_check_no_releases" = "No releases found for this repository, or the repository does not exist.";
+"update_check_no_dmg" = "The latest release has no DMG file attached.";
 "alert_ok" = "OK";
 "update_available_message" = "Version %@ is now available.";
 "search_placeholder" = "Search clipboard";

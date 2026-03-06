@@ -9,7 +9,7 @@ final class UpdateChecker {
     private static let alertWindowLevel = NSWindow.Level(rawValue: 201)
 
     /// GitHub の owner/repo（要差し替え）
-    private let githubRepository = "c-c-meguchan/clipfeed"
+    private let githubRepository = "c-c-meguchan/clipfeed-site"
 
     private var latestReleaseURL: URL {
         URL(string: "https://api.github.com/repos/\(githubRepository)/releases/latest")!
@@ -24,26 +24,44 @@ final class UpdateChecker {
         let window = presentingWindow
         var request = URLRequest(url: latestReleaseURL)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+        request.setValue("ClipFeed-Updater", forHTTPHeaderField: "User-Agent")
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             DispatchQueue.main.async {
-                self?.handleResponse(current: current, data: data, error: error, showNoUpdateAlert: showNoUpdateAlert, presentingWindow: window)
+                self?.handleResponse(current: current, data: data, response: response, error: error, showNoUpdateAlert: showNoUpdateAlert, presentingWindow: window)
             }
         }
         task.resume()
     }
 
-    private func handleResponse(current: String, data: Data?, error: Error?, showNoUpdateAlert: Bool, presentingWindow: NSWindow? = nil) {
+    private func handleResponse(current: String, data: Data?, response: URLResponse?, error: Error?, showNoUpdateAlert: Bool, presentingWindow: NSWindow? = nil) {
         if let error = error {
             if showNoUpdateAlert {
                 showAlert(title: L("update_check_title", fallback: "Update"), message: "\(L("update_check_fetch_error", fallback: "Failed to fetch version info."))\n\(error.localizedDescription)", presentingWindow: presentingWindow)
             }
             return
         }
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            if showNoUpdateAlert {
+                let message: String
+                if http.statusCode == 404 {
+                    message = L("update_check_no_releases", fallback: "No releases found for this repository, or the repository does not exist.")
+                } else {
+                    message = "\(L("update_check_fetch_error", fallback: "Failed to fetch version info.")) (HTTP \(http.statusCode))"
+                }
+                showAlert(title: L("update_check_title", fallback: "Update"), message: message, presentingWindow: presentingWindow)
+            }
+            return
+        }
         guard let data = data,
-              let release = try? JSONDecoder().decode(GitHubRelease.self, from: data),
-              let info = release.toVersionInfo() else {
+              let release = try? JSONDecoder().decode(GitHubRelease.self, from: data) else {
             if showNoUpdateAlert {
                 showAlert(title: L("update_check_title", fallback: "Update"), message: L("update_check_fetch_error", fallback: "Failed to fetch version info."), presentingWindow: presentingWindow)
+            }
+            return
+        }
+        guard let info = release.toVersionInfo() else {
+            if showNoUpdateAlert {
+                showAlert(title: L("update_check_title", fallback: "Update"), message: L("update_check_no_dmg", fallback: "The latest release has no DMG file attached."), presentingWindow: presentingWindow)
             }
             return
         }

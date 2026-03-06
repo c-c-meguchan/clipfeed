@@ -48,6 +48,8 @@
 "update_download" = "ダウンロード";
 "update_later" = "あとで";
 "update_latest" = "現在が最新バージョンです。";
+"update_check_no_releases" = "リポジトリが見つからないか、リリースがまだありません。";
+"update_check_no_dmg" = "最新リリースにDMGが添付されていません。";
 "alert_ok" = "OK";
 "update_available_message" = "新しいバージョン %@ が利用可能です。";
 "search_placeholder" = "コピー履歴を検索";
