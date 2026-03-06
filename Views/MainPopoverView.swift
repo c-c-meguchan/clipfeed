@@ -62,14 +62,9 @@ struct MainPopoverView: View {
         return result
     }
     
-    /// 現在のタブでショートカット対象となるアイテム（kind == .normal のみ、最大9件／最新順）
-    private var shortcutTargets: [ClipboardItem] {
-        Array(clipboardViewModel.filteredItems.filter { $0.kind == .normal }.prefix(9))
-    }
-    
-    /// ショートカット用の index（0..<9）を item.id で O(1) 参照するためのマップ。body 内で 1 回だけ O(n) 計算し、ForEach 内では O(n²) にならないようにする。
+    /// ショートカット用の index（0..<9）を item.id で O(1) 参照。shortcutOrderedIDs を View が更新するのでここでは参照するだけ。
     private var shortcutIndexByID: [UUID: Int] {
-        Dictionary(uniqueKeysWithValues: shortcutTargets.enumerated().map { ($0.element.id, $0.offset) })
+        Dictionary(uniqueKeysWithValues: clipboardViewModel.shortcutOrderedIDs.enumerated().map { ($0.element, $0.offset) })
     }
 
     /// 表示順（displayedItems）におけるインデックスを item.id から逆引きするマップ
@@ -139,15 +134,18 @@ struct MainPopoverView: View {
                     .coordinateSpace(name: "clipboardScroll")
                     .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                         scrollOffset = value
+                        updateShortcutOrder(scrollOffset: value)
                     }
                     .onPreferenceChange(ItemFramesPreferenceKey.self) { value in
                         itemFrames = value
+                        updateShortcutOrder(itemFrames: value)
                     }
                     .onDisappear {
                         clipboardViewModel.savePopoverCloseState()
                     }
                     // ポップオーバーを開いたとき → 前回のフォーカスを復元 or 最新にリセットし、検索にはフォーカスしない
                     .onAppear {
+                        updateShortcutOrder()
                         let focusLatest = clipboardViewModel.restoreOrResetFocusOnPopoverOpen()
                         if let fid = clipboardViewModel.focusedItemID, let idx = indexByID[fid] {
                             lastFocusedIndex = idx
@@ -173,6 +171,7 @@ struct MainPopoverView: View {
                     }
                     // 新規アイテム追加時
                     .onChange(of: clipboardViewModel.filteredItems.count) { _ in
+                        updateShortcutOrder()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                             withAnimation(.easeOut(duration: 0.2)) {
                                 scrollToLatest(proxy)
@@ -181,9 +180,14 @@ struct MainPopoverView: View {
                     }
                     // タブ切替時
                     .onChange(of: clipboardViewModel.selectedSource) { _ in
+                        updateShortcutOrder()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                             scrollToLatest(proxy)
                         }
+                    }
+                    // 検索テキスト変更時もショートカット割り当てを再計算
+                    .onChange(of: clipboardViewModel.searchText) { _ in
+                        updateShortcutOrder()
                     }
                     // フォーカス移動時: フォーカス中アイテムが表示外に出る場合のみスクロール（中腹では端に固定されず現在地を維持）
                     .onChange(of: clipboardViewModel.focusedItemID) { id in
@@ -223,7 +227,12 @@ struct MainPopoverView: View {
                 }
             }
             .onPreferenceChange(ScrollVisibleHeightPreferenceKey.self) { value in
-                if value > 0 { scrollVisibleHeight = value }
+                if value > 0 {
+                    scrollVisibleHeight = value
+                    updateShortcutOrder(scrollVisibleHeight: value)
+                } else {
+                    updateShortcutOrder()
+                }
             }
         }
     }
@@ -253,12 +262,41 @@ struct MainPopoverView: View {
         }
     }
 
-    /// 表示順の最新（一番下）にスクロール
+    /// 表示順の最新（一番上）にスクロール
     private func scrollToLatest(_ proxy: ScrollViewProxy) {
-        guard let id = clipboardViewModel.displayedItems.last?.id else { return }
-        proxy.scrollTo(id, anchor: .bottom)
+        guard let id = clipboardViewModel.displayedItems.first?.id else { return }
+        proxy.scrollTo(id, anchor: .top)
     }
 
+    /// 表示内のアイテムのうち kind == .normal を上から順に最大9件の ID を shortcutOrderedIDs にセットする。index 0 = ⌘1 = 一番上。
+    private func updateShortcutOrder(
+        scrollOffset overrideOffset: CGFloat? = nil,
+        itemFrames overrideFrames: [UUID: CGRect]? = nil,
+        scrollVisibleHeight overrideHeight: CGFloat? = nil
+    ) {
+        let displayed = clipboardViewModel.displayedItems
+        let offset = overrideOffset ?? scrollOffset
+        let frames = overrideFrames ?? itemFrames
+        let height = overrideHeight ?? scrollVisibleHeight
+
+        let visibleTop: CGFloat = -offset
+        let visibleBottom: CGFloat = -offset + height
+
+        let ids: [UUID]
+        if frames.isEmpty || height <= 0 {
+            ids = displayed.filter { $0.kind == .normal }.prefix(9).map(\.id)
+        } else {
+            let visible = displayed.filter { item in
+                guard item.kind == .normal, let f = frames[item.id] else { return false }
+                return f.maxY > visibleTop && f.minY < visibleBottom
+            }
+            ids = visible
+                .sorted { (frames[$0.id]?.minY ?? 0) < (frames[$1.id]?.minY ?? 0) }
+                .prefix(9)
+                .map(\.id)
+        }
+        clipboardViewModel.shortcutOrderedIDs = ids
+    }
     private func sourceChip(name: String, iconData: Data?, source: String?) -> some View {
         let isSelected = clipboardViewModel.selectedSource == source
         return Button {

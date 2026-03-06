@@ -32,6 +32,9 @@ final class ClipboardViewModel: ObservableObject {
     @Published var focusArea: FocusArea = .feed
     @Published var isSearchFocused: Bool = false
 
+    /// ショートカット ⌘1〜⌘9 の割り当て順（画面内で上から順）。index 0 = ⌘1 = 一番上の表示アイテム。
+    @Published var shortcutOrderedIDs: [UUID] = []
+
     /// ポップオーバーを閉じたときの状態（再開時にフォーカス復元 or 最新にリセットの判定に使用）
     private var lastFocusedItemIDWhenClosed: UUID?
     private var lastFilteredCountWhenClosed: Int?
@@ -48,22 +51,19 @@ final class ClipboardViewModel: ObservableObject {
         return items.filter { $0.sourceAppName == source }
     }
 
-    /// View に渡す表示順（古い順 → 最新が末尾 = チャット型）
-    /// reversed() を View 側で呼ばないためここで計算する
+    /// View に渡す表示順（最新が先頭 = 上が最新）。⌘1 = 一番上。
     var displayedItems: [ClipboardItem] {
         let base = filteredItems
-        // 検索テキストが空のときは従来どおり
         guard !searchText.isEmpty else {
-            return base.reversed()
+            return base
         }
         let query = searchText
-        // text / plainText と 読み込み済み OCR テキストを検索対象にする
         let searched = base.filter { item in
             let text = item.plainText ?? item.text ?? ""
             let ocr = item.ocrText ?? item.ocrResult ?? ""
             return text.localizedCaseInsensitiveContains(query) || ocr.localizedCaseInsensitiveContains(query)
         }
-        return searched.reversed()
+        return searched
     }
 
     /// タブ生成用：items から sourceAppName を最新出現順で重複除去したリスト
@@ -110,8 +110,8 @@ final class ClipboardViewModel: ObservableObject {
             return
         }
 
-        // 最新アイテム（一番下）にフォーカスを合わせる
-        focusedItemID = displayedItems.last?.id
+        // 最新アイテム（一番上）にフォーカスを合わせる
+        focusedItemID = displayedItems.first?.id
     }
 
     /// タブを delta 分だけ循環切替（nil = "すべて" を先頭に含む）
@@ -578,7 +578,7 @@ final class ClipboardViewModel: ObservableObject {
     /// ポップオーバーを閉じる直前に呼ぶ。次回開いたときの復元判定用に現在の状態を保存する
     func savePopoverCloseState() {
         lastFilteredCountWhenClosed = filteredItems.count
-        lastLatestItemIDWhenClosed = displayedItems.last?.id
+        lastLatestItemIDWhenClosed = displayedItems.first?.id
         if focusArea == .feed, !isSearchFocused {
             lastFocusedItemIDWhenClosed = focusedItemID
         } else {
@@ -614,7 +614,7 @@ final class ClipboardViewModel: ObservableObject {
         }
 
         let currentCount = filteredItems.count
-        let currentLatestID = displayedItems.last?.id
+        let currentLatestID = displayedItems.first?.id
 
         // 初回起動 or 閉じている間に新規コピーが追加された → 最新にフォーカス
         if lastFilteredCountWhenClosed == nil {

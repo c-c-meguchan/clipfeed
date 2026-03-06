@@ -271,10 +271,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func reCopyByIndex(_ index: Int) {
         guard let popover, popover.isShown else { return }
         guard let vm = clipboardViewModel else { return }
-        // 現在のタブ（filteredItems）の中から kind == .normal の最新順で最大9件だけをショートカット対象にする
-        let targets = Array(vm.filteredItems.filter { $0.kind == .normal }.prefix(9))
-        guard index >= 0, index < targets.count else { return }
-        let item = targets[index]
+        guard index >= 0, index < vm.shortcutOrderedIDs.count else { return }
+        let id = vm.shortcutOrderedIDs[index]
+        guard let item = vm.filteredItems.first(where: { $0.id == id }) else { return }
         print("Shortcut re-copy index: \(index)")
         vm.reCopyItem(item)
     }
@@ -282,9 +281,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func ocrCopyByIndex(_ index: Int) {
         guard let popover, popover.isShown else { return }
         guard let vm = clipboardViewModel else { return }
-        let targets = Array(vm.filteredItems.filter { $0.kind == .normal }.prefix(9))
-        guard index >= 0, index < targets.count else { return }
-        let item = targets[index]
+        guard index >= 0, index < vm.shortcutOrderedIDs.count else { return }
+        let id = vm.shortcutOrderedIDs[index]
+        guard let item = vm.filteredItems.first(where: { $0.id == id }) else { return }
         guard item.type == .image else { return }
         print("Performing OCR for index \(index)")
         vm.ocrCopy(item)
