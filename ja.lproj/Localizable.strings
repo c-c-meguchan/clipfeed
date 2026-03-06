@@ -62,3 +62,8 @@
 "shortcut_copy_focused" = "フォーカス中のアイテムをコピー";
 "shortcut_clear_search" = "検索をやめて戻る";
 "shortcut_move_focus" = "フォーカスを上 / 下に移動";
+"contact_tab" = "お問い合わせ";
+"contact_button" = "お問い合わせはこちら";
+"export_log" = "ログを出力";
+"log_export_success" = "ログを出力しました。";
+"log_export_failed" = "ログの保存に失敗しました。";

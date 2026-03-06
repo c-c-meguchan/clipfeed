@@ -338,7 +338,7 @@ private struct ShortcutButtonStyle: ButtonStyle {
 private struct CreatedLabelRenderLog: View {
     var body: some View {
         if CreatedLabelContent.logCreatedLabelRenders {
-            let _ = print("[CreatedLabel] body 実行")
+            let _ = LogCapture.record("[CreatedLabel] body 実行")
         }
         return EmptyView()
     }

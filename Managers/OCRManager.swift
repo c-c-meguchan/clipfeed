@@ -43,7 +43,7 @@ class OCRManager {
                 }
 
                 let result = recognizedStrings.joined(separator: "\n")
-                print("[OCR] result: \(result.isEmpty ? "(empty)" : result)")
+                LogCapture.record("[OCR] result: \(result.isEmpty ? "(empty)" : result)")
                 continuation.resume(returning: result.isEmpty ? nil : result)
             }
 
@@ -57,7 +57,7 @@ class OCRManager {
             do {
                 try handler.perform([request])
             } catch {
-                print("[OCR] error: \(error)")
+                LogCapture.record("[OCR] error: \(error)")
                 continuation.resume(returning: nil)
             }
         }

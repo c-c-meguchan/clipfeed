@@ -65,7 +65,7 @@ class ClipboardMonitor: ObservableObject {
         let last = changeCountGet?() ?? -1
         guard current != last else { return }
 
-        print("[ClipboardVM] change detected:", current)
+        LogCapture.record("[ClipboardVM] change detected: \(current)")
         queue.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             self?.readClipboard(expectedChangeCount: current)
         }
@@ -76,7 +76,7 @@ class ClipboardMonitor: ObservableObject {
     private func readClipboard(expectedChangeCount: Int) {
         guard pasteboard.changeCount == expectedChangeCount else { return }
 
-        print("Types:", pasteboard.types ?? [])
+        LogCapture.record("Types: \(pasteboard.types ?? [])")
         guard let types = pasteboard.types, !types.isEmpty else { return }
 
         // types が存在する場合のみ lastChangeCount を更新（空の change を消費しない）
@@ -100,8 +100,8 @@ class ClipboardMonitor: ObservableObject {
         let hasHTML = html != nil
         let hasString = text != nil && !text!.isEmpty
 
-        print("[Clipboard] hasRTF: \(hasRTF), hasHTML: \(hasHTML), hasString: \(hasString), hasImage: \(hasImageData)")
-        print("Types:", types)
+        LogCapture.record("[Clipboard] hasRTF: \(hasRTF), hasHTML: \(hasHTML), hasString: \(hasString), hasImage: \(hasImageData)")
+        LogCapture.record("Types: \(types)")
 
         let internalCopy = isInternalCopy
         if internalCopy {
@@ -122,7 +122,7 @@ class ClipboardMonitor: ObservableObject {
                 self.imageData = imgData
                 self.copiedText = nil
             }
-            print("Clipboard changed: [image]")
+            LogCapture.record("Clipboard changed: [image]")
             return
         }
 
@@ -142,7 +142,7 @@ class ClipboardMonitor: ObservableObject {
                 self.imageData = nil
             }
             let desc = text.map { $0.isEmpty ? "(empty)" : $0 } ?? (rtf != nil ? "[RTF]" : "[HTML]")
-            print("Clipboard changed: \(desc)")
+            LogCapture.record("Clipboard changed: \(desc)")
             return
         }
 
@@ -165,15 +165,15 @@ class ClipboardMonitor: ObservableObject {
     private func resolveSourceOnQueue(hasImage: Bool, hasString: Bool, hasRTF: Bool, hasHTML: Bool) -> (name: String?, bundleID: String?, iconData: Data?)? {
         let item = pasteboard.pasteboardItems?.first
         if item?.types.contains(where: { $0.rawValue == "com.apple.is-remote-clipboard" }) == true {
-            print("Source: Universal Clipboard")
+            LogCapture.record("Source: Universal Clipboard")
             return ("他のデバイス", "universal.clipboard", nil)
         }
         if hasImage && !hasString && !hasHTML && !hasRTF {
-            print("Source: Screenshot")
+            LogCapture.record("Source: Screenshot")
             return ("スクリーンショット", "com.apple.screencapture", nil)
         }
         let app = NSWorkspace.shared.frontmostApplication
-        print("Source: \(app?.localizedName ?? "Unknown")")
+        LogCapture.record("Source: \(app?.localizedName ?? "Unknown")")
         return (app?.localizedName, app?.bundleIdentifier, app?.icon?.tiffRepresentation)
     }
 
@@ -192,7 +192,7 @@ class ClipboardMonitor: ObservableObject {
                 self.copiedText = ""
                 self.imageData = nil
             }
-            print("Clipboard changed: [HTML text]")
+            LogCapture.record("Clipboard changed: [HTML text]")
             return
         }
 
@@ -207,11 +207,11 @@ class ClipboardMonitor: ObservableObject {
                 self.copiedText = ""
                 self.imageData = nil
             }
-            print("Clipboard changed: [HTML text - invalid URL]")
+            LogCapture.record("Clipboard changed: [HTML text - invalid URL]")
             return
         }
 
-        print("[Clipboard] Downloading image from HTML: \(urlString)")
+        LogCapture.record("[Clipboard] Downloading image from HTML: \(urlString)")
 
         URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
             guard let self, let data, error == nil, !data.isEmpty else {
@@ -223,14 +223,14 @@ class ClipboardMonitor: ObservableObject {
                     self.latestSourceAppIconData = source?.iconData
                     self.copiedText = ""
                     self.imageData = nil
-                    print("[Clipboard] Image download failed, treating as HTML text")
+                    LogCapture.record("[Clipboard] Image download failed, treating as HTML text")
                 }
                 return
             }
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 guard self.pasteboard.changeCount == changeCount else {
-                    print("[Clipboard] Image download completed but clipboard changed, discarding")
+                    LogCapture.record("[Clipboard] Image download completed but clipboard changed, discarding")
                     return
                 }
                 self.latestRTFData = nil
@@ -240,7 +240,7 @@ class ClipboardMonitor: ObservableObject {
                 self.latestSourceAppIconData = source?.iconData
                 self.imageData = data
                 self.copiedText = nil
-                print("Clipboard changed: [image from HTML]")
+                LogCapture.record("Clipboard changed: [image from HTML]")
             }
         }.resume()
     }

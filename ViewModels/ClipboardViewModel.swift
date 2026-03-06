@@ -127,12 +127,12 @@ final class ClipboardViewModel: ObservableObject {
     func switchSourceTab(delta: Int) {
         let sources: [String?] = [nil] + availableSources.map { Optional($0) }
         guard sources.count > 1 else {
-            print("[switchSourceTab] skipped — sources.count:\(sources.count) (タブが1つしかない)")
+            LogCapture.record("[switchSourceTab] skipped — sources.count:\(sources.count) (タブが1つしかない)")
             return
         }
         let currentIndex = sources.firstIndex(where: { $0 == selectedSource }) ?? 0
         let newIndex = (currentIndex + delta + sources.count) % sources.count
-        print("[switchSourceTab] delta:\(delta) \(String(describing: selectedSource)) → \(String(describing: sources[newIndex]))")
+        LogCapture.record("[switchSourceTab] delta:\(delta) \(String(describing: selectedSource)) → \(String(describing: sources[newIndex]))")
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8, blendDuration: 0.1)) {
             selectedSource = sources[newIndex]
         }
@@ -201,7 +201,7 @@ final class ClipboardViewModel: ObservableObject {
         total += item.ocrText?.utf8.count ?? 0
         total += item.ocrResult?.utf8.count ?? 0
         if total > maxItemSize {
-            print("[ClipboardVM] validateItemSize: OVER limit — \(total) bytes")
+            LogCapture.record("[ClipboardVM] validateItemSize: OVER limit — \(total) bytes")
             return false
         }
         return true
@@ -261,7 +261,7 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     init(monitor: ClipboardMonitor = .shared) {
-        print("ClipboardViewModel initialized")
+        LogCapture.record("ClipboardViewModel initialized")
         self.monitor = monitor
 
         monitor.setChangeCountProvider(
@@ -298,12 +298,12 @@ final class ClipboardViewModel: ObservableObject {
         if !loadCompleted { return }
         if isPerformingOCR {
             isPerformingOCR = false
-            print("Skip history append (OCR operation)")
+            LogCapture.record("Skip history append (OCR operation)")
             return
         }
         if let last = lastReCopiedText, last == text {
             lastReCopiedText = nil
-            print("Skipped self-triggered copy")
+            LogCapture.record("Skipped self-triggered copy")
             return
         }
 
@@ -316,7 +316,7 @@ final class ClipboardViewModel: ObservableObject {
         let hadHTML = htmlString != nil
         if let h = htmlString {
             let htmlBytes = h.utf8.count
-            print("[ClipboardVM] HTML size (1件): \(htmlBytes) bytes (\(String(format: "%.2f", Double(htmlBytes) / 1_000_000)) MB) source: \(monitor.latestSourceAppName ?? "?")")
+            LogCapture.record("[ClipboardVM] HTML size (1件): \(htmlBytes) bytes (\(String(format: "%.2f", Double(htmlBytes) / 1_000_000)) MB) source: \(monitor.latestSourceAppName ?? "?")")
         }
 
         // 一旦フル内容でアイテムを組み立て、validateItemSize で 2MB 制限のみチェック
@@ -349,12 +349,12 @@ final class ClipboardViewModel: ObservableObject {
             )
             items.insert(placeholder, at: 0)
             enforceMaxItems()
-            print("[ClipboardVM] Oversized item placeholder inserted")
+            LogCapture.record("[ClipboardVM] Oversized item placeholder inserted")
             return
         }
 
         if items.first?.contentHash == contentHashValue {
-            print("[ClipboardVM] Skipped duplicate (same content as previous item)")
+            LogCapture.record("[ClipboardVM] Skipped duplicate (same content as previous item)")
             return
         }
 
@@ -362,19 +362,19 @@ final class ClipboardViewModel: ObservableObject {
         enforceMaxItems()
         saveToDisk()
         let totalHTMLBytes = items.compactMap { $0.html }.reduce(0) { $0 + $1.utf8.count }
-        print("[ClipboardVM] Current clipboard items: \(items.count), total HTML in memory: \(totalHTMLBytes) bytes (\(String(format: "%.2f", Double(totalHTMLBytes) / 1_000_000)) MB)")
+        LogCapture.record("[ClipboardVM] Current clipboard items: \(items.count), total HTML in memory: \(totalHTMLBytes) bytes (\(String(format: "%.2f", Double(totalHTMLBytes) / 1_000_000)) MB)")
     }
     
     private func handleClipboardImage(_ data: Data) {
         if !loadCompleted { return }
         if isPerformingOCR {
             isPerformingOCR = false
-            print("Skip history append (OCR operation)")
+            LogCapture.record("Skip history append (OCR operation)")
             return
         }
         if let last = lastReCopiedImageData, last == data {
             lastReCopiedImageData = nil
-            print("Skipped self-triggered copy")
+            LogCapture.record("Skipped self-triggered copy")
             return
         }
 
@@ -404,20 +404,20 @@ final class ClipboardViewModel: ObservableObject {
             )
             items.insert(placeholder, at: 0)
             enforceMaxItems()
-            print("[ClipboardVM] Oversized item placeholder inserted")
+            LogCapture.record("[ClipboardVM] Oversized item placeholder inserted")
             return
         }
 
         if items.first?.contentHash == contentHashValue {
-            print("[ClipboardVM] Skipped duplicate (same content as previous item)")
+            LogCapture.record("[ClipboardVM] Skipped duplicate (same content as previous item)")
             return
         }
 
         items.insert(newItem, at: 0)
         enforceMaxItems()
         saveToDisk()
-        print("[Image] size: \(data.count) bytes (\(String(format: "%.2f", Double(data.count) / 1_000_000)) MB)")
-        print("Current clipboard items count: \(items.count)")
+        LogCapture.record("[Image] size: \(data.count) bytes (\(String(format: "%.2f", Double(data.count) / 1_000_000)) MB)")
+        LogCapture.record("Current clipboard items count: \(items.count)")
 
         let itemId = newItem.id
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -505,7 +505,7 @@ final class ClipboardViewModel: ObservableObject {
                 pasteboard.setString(text, forType: .string)
                 showReCopyToast()
                 showHighlight(.ocr(item.id))
-                print("OCR copy completed: \(text.prefix(80))")
+                LogCapture.record("OCR copy completed: \(text.prefix(80))")
             }
         }
     }
@@ -754,7 +754,7 @@ final class ClipboardViewModel: ObservableObject {
         }
         let normalCount = items.filter { $0.kind == .normal }.count
         let placeholderCount = items.filter { $0.kind == .oversizedPlaceholder }.count
-        print("[saveToDisk] 直前 — items.count: \(items.count), normal: \(normalCount), placeholder: \(placeholderCount), immediate: \(immediate)")
+        LogCapture.record("[saveToDisk] 直前 — items.count: \(items.count), normal: \(normalCount), placeholder: \(placeholderCount), immediate: \(immediate)")
         pendingSaveWorkItem?.cancel()
         pendingSaveWorkItem = nil
         if immediate {
@@ -779,7 +779,7 @@ final class ClipboardViewModel: ObservableObject {
     /// 安全制限: data.count > maxTotalJSON の場合のみ古いアイテムを削除して再エンコード（UI件数とは別の二段階防御）。
     /// sourceAppIconData は永続化しない（TIFF が大きく合計で 100MB を超え、サイズ制限削除で他アイテムが消える不具合を防ぐ）。
     private func performWrite(snapshot: [ClipboardItem]) {
-        print("[saveToDisk] performWrite — 書き込む件数: \(snapshot.count)")
+        LogCapture.record("[saveToDisk] performWrite — 書き込む件数: \(snapshot.count)")
         let url = Self.persistenceFileURL
         let backupURL = Self.backupFileURL
         let dir = url.deletingLastPathComponent()
@@ -791,9 +791,9 @@ final class ClipboardViewModel: ObservableObject {
             do {
                 let currentData = try Data(contentsOf: url)
                 try currentData.write(to: backupURL, options: .atomic)
-                print("[ClipboardVM] backup: clipboard.json → backup.json (\(currentData.count) bytes)")
+                LogCapture.record("[ClipboardVM] backup: clipboard.json → backup.json (\(currentData.count) bytes)")
             } catch {
-                print("[ClipboardVM] backup failed (current → backup): \(error)")
+                LogCapture.record("[ClipboardVM] backup failed (current → backup): \(error)")
             }
         }
         let encoder = JSONEncoder()
@@ -806,11 +806,11 @@ final class ClipboardViewModel: ObservableObject {
         do {
             data = try encoder.encode(ClipboardStore(version: 1, items: persistableItems))
         } catch {
-            print("[ClipboardVM] saveToDisk failed (encode): \(error)")
+            LogCapture.record("[ClipboardVM] saveToDisk failed (encode): \(error)")
             return
         }
         if data.count > Self.maxTotalJSON {
-            print("[ClipboardVM] saveToDisk: JSON size \(data.count) > \(Self.maxTotalJSON), trimming oldest items")
+            LogCapture.record("[ClipboardVM] saveToDisk: JSON size \(data.count) > \(Self.maxTotalJSON), trimming oldest items")
         }
         while data.count > Self.maxTotalJSON && !persistableItems.isEmpty {
             let sorted = persistableItems.sorted { $0.createdAt < $1.createdAt }
@@ -820,15 +820,15 @@ final class ClipboardViewModel: ObservableObject {
             do {
                 data = try encoder.encode(ClipboardStore(version: 1, items: persistableItems))
             } catch {
-                print("[ClipboardVM] saveToDisk failed (re-encode): \(error)")
+                LogCapture.record("[ClipboardVM] saveToDisk failed (re-encode): \(error)")
                 return
             }
         }
         do {
             try data.write(to: url, options: .atomic)
-            print("[ClipboardVM] saveToDisk success: \(persistableItems.count) items → \(url.path)")
+            LogCapture.record("[ClipboardVM] saveToDisk success: \(persistableItems.count) items → \(url.path)")
         } catch {
-            print("[ClipboardVM] saveToDisk failed (write): \(error)")
+            LogCapture.record("[ClipboardVM] saveToDisk failed (write): \(error)")
         }
     }
 
@@ -868,29 +868,29 @@ final class ClipboardViewModel: ObservableObject {
                     let data = try Data(contentsOf: url)
                     if let items = decodeItems(from: data) {
                         loaded = items
-                        print("[ClipboardVM] loadFromDisk: decoded clipboard.json — \(items.count) items")
+                        LogCapture.record("[ClipboardVM] loadFromDisk: decoded clipboard.json — \(items.count) items")
                     } else {
                         // decode 失敗 → backup から復元を試みる
                         if FileManager.default.fileExists(atPath: backupURL.path),
                            let backupData = try? Data(contentsOf: backupURL),
                            let items = decodeItems(from: backupData) {
                             loaded = items
-                            print("[ClipboardVM] loadFromDisk: decode failed for clipboard.json, restored from backup.json — \(items.count) items")
+                            LogCapture.record("[ClipboardVM] loadFromDisk: decode failed for clipboard.json, restored from backup.json — \(items.count) items")
                         } else {
                             loaded = []
-                            print("[ClipboardVM] loadFromDisk: both clipboard.json and backup.json decode failed — using empty array")
+                            LogCapture.record("[ClipboardVM] loadFromDisk: both clipboard.json and backup.json decode failed — using empty array")
                         }
                     }
                 } catch {
-                    print("[ClipboardVM] loadFromDisk: read error for clipboard.json: \(error)")
+                    LogCapture.record("[ClipboardVM] loadFromDisk: read error for clipboard.json: \(error)")
                     if FileManager.default.fileExists(atPath: backupURL.path),
                        let backupData = try? Data(contentsOf: backupURL),
                        let items = decodeItems(from: backupData) {
                         loaded = items
-                        print("[ClipboardVM] loadFromDisk: restored from backup.json — \(items.count) items")
+                        LogCapture.record("[ClipboardVM] loadFromDisk: restored from backup.json — \(items.count) items")
                     } else {
                         loaded = []
-                        print("[ClipboardVM] loadFromDisk: both clipboard.json and backup.json failed — using empty array")
+                        LogCapture.record("[ClipboardVM] loadFromDisk: both clipboard.json and backup.json failed — using empty array")
                     }
                 }
             } else {
@@ -898,10 +898,10 @@ final class ClipboardViewModel: ObservableObject {
                    let backupData = try? Data(contentsOf: backupURL),
                    let items = decodeItems(from: backupData) {
                     loaded = items
-                    print("[ClipboardVM] loadFromDisk: clipboard.json missing, loaded from backup.json — \(items.count) items")
+                    LogCapture.record("[ClipboardVM] loadFromDisk: clipboard.json missing, loaded from backup.json — \(items.count) items")
                 } else {
                     loaded = []
-                    print("[ClipboardVM] loadFromDisk: no clipboard.json, backup unavailable or decode failed — using empty array")
+                    LogCapture.record("[ClipboardVM] loadFromDisk: no clipboard.json, backup unavailable or decode failed — using empty array")
                 }
             }
             DispatchQueue.main.async { [weak self] in

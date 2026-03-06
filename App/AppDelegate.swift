@@ -39,7 +39,7 @@ private func carbonHotKeyHandler(
     if hotKeyID.id == 1 {
         let delegate = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
         DispatchQueue.main.async {
-            print("Global shortcut detected")
+            LogCapture.record("Global shortcut detected")
             delegate.togglePopover()
         }
     }
@@ -120,7 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             // [診断] ⌘⌥ の組み合わせが来たときのみアプリ状態をログ
             if f.contains(.command) && f.contains(.option) {
-                print("[LocalMonitor] ⌘⌥ keyDown — keyCode:\(event.keyCode) isActive:\(NSApp.isActive) popoverShown:\(self.popover?.isShown ?? false)")
+                LogCapture.record("[LocalMonitor] ⌘⌥ keyDown — keyCode:\(event.keyCode) isActive:\(NSApp.isActive) popoverShown:\(self.popover?.isShown ?? false)")
             }
 
             // ⌘⌥⇧H：ポップオーバーを閉じる
@@ -240,7 +240,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             &hotKeyHandlerRef
         )
         guard installStatus == noErr else {
-            print("[AppDelegate] ⚠️ Carbon event handler install failed: \(installStatus)")
+            LogCapture.record("[AppDelegate] ⚠️ Carbon event handler install failed: \(installStatus)")
             return
         }
 
@@ -256,9 +256,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         if registerStatus == noErr {
-            print("[AppDelegate] Carbon hotkey registered ✓")
+            LogCapture.record("[AppDelegate] Carbon hotkey registered ✓")
         } else {
-            print("[AppDelegate] ⚠️ Carbon hotkey registration failed: \(registerStatus)")
+            LogCapture.record("[AppDelegate] ⚠️ Carbon hotkey registration failed: \(registerStatus)")
         }
     }
 
@@ -274,7 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard index >= 0, index < vm.shortcutOrderedIDs.count else { return }
         let id = vm.shortcutOrderedIDs[index]
         guard let item = vm.filteredItems.first(where: { $0.id == id }) else { return }
-        print("Shortcut re-copy index: \(index)")
+        LogCapture.record("Shortcut re-copy index: \(index)")
         vm.reCopyItem(item)
     }
 
@@ -285,7 +285,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let id = vm.shortcutOrderedIDs[index]
         guard let item = vm.filteredItems.first(where: { $0.id == id }) else { return }
         guard item.type == .image else { return }
-        print("Performing OCR for index \(index)")
+        LogCapture.record("Performing OCR for index \(index)")
         vm.ocrCopy(item)
     }
 
@@ -329,7 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func togglePopover() {
-        print("Toggle popover")
+        LogCapture.record("Toggle popover")
         guard let popover,
               let statusItem,
               let button = statusItem.button else { return }
@@ -340,7 +340,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             clipboardViewModel?.beginRestoringFocusOnPopoverOpen()
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            print("[Popover] shown — isActive:\(NSApp.isActive)")
+            LogCapture.record("[Popover] shown — isActive:\(NSApp.isActive)")
             // ポップオーバー表示後、検索フィールドから first responder を外して矢印キーを効かせる（SwiftUI のフォーカスが遅れて付くため複数回・遅めに実行）
             resignSearchFieldFromPopoverWindow(after: 0.08)
             resignSearchFieldFromPopoverWindow(after: 0.18)

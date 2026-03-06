@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ServiceManagement
+import UniformTypeIdentifiers
 
 /// 設定画面。左サイドバーに大メニュー（設定 / アプリバージョン）、右に小メニューと内容。
 struct SettingsView: View {
@@ -12,6 +13,7 @@ struct SettingsView: View {
         case shortcuts
         case about
         case support
+        case contact
 
         var displayTitle: String {
             switch self {
@@ -19,6 +21,7 @@ struct SettingsView: View {
             case .shortcuts: return L("shortcuts", fallback: "Shortcuts")
             case .about: return L("about_app_version", fallback: "App Version")
             case .support: return L("support_developer", fallback: "Support Developer")
+            case .contact: return L("contact_tab", fallback: "Contact")
             }
         }
 
@@ -28,6 +31,7 @@ struct SettingsView: View {
             case .shortcuts: return "keyboard"
             case .about: return "info.circle.fill"
             case .support: return "heart.fill"
+            case .contact: return "envelope.fill"
             }
         }
     }
@@ -64,6 +68,8 @@ struct SettingsView: View {
                     aboutDetail
                 case .support:
                     supportDetail
+                case .contact:
+                    contactDetail
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -219,6 +225,138 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private static let contactFormURL = URL(string: "https://docs.google.com/forms/d/e/1FAIpQLScGqNNWjsaCtIzmYRRW6nHeYXp-4PP6NX_Jllg-GXrbvbyDbw/viewform?usp=header")!
+
+    private var contactDetail: some View {
+        Form {
+            Section {
+                Text(L("contact_tab", fallback: "Contact"))
+                    .font(.headline)
+            }
+            Section {
+                Button {
+                    NSWorkspace.shared.open(Self.contactFormURL)
+                } label: {
+                    HStack {
+                        Image(systemName: "link")
+                        Text(L("contact_button", fallback: "Contact us here"))
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button {
+                    Self.exportLogToFile(presentingWindow: NSApp.keyWindow)
+                } label: {
+                    HStack {
+                        Image(systemName: "doc.text")
+                        Text(L("export_log", fallback: "Export log"))
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    /// 診断ログをテキストで生成し、NSSavePanel で保存する。
+    private static func exportLogToFile(presentingWindow: NSWindow?) {
+        let logContent = buildLogContent()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        let dateStr = formatter.string(from: Date())
+        let defaultName = "ClipFeed-log-\(dateStr).txt"
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.nameFieldStringValue = defaultName
+        panel.canCreateDirectories = true
+        panel.title = L("export_log", fallback: "Export log")
+
+        if let window = presentingWindow {
+            panel.beginSheetModal(for: window) { response in
+                // シートが完全に閉じてから処理するため、次のランループで実行する
+                DispatchQueue.main.async {
+                    switch response {
+                    case .OK:
+                        if let url = panel.url {
+                            writeLogAndNotify(content: logContent, to: url, presentingWindow: window)
+                        }
+                    default:
+                        break
+                    }
+                }
+            }
+            return
+        }
+        let result = panel.runModal()
+        if result == .OK, let url = panel.url {
+            writeLogAndNotify(content: logContent, to: url, presentingWindow: nil)
+        }
+    }
+
+    private static func buildLogContent() -> String {
+        let version = Bundle.main.appVersion
+        let osVersion = ProcessInfo.processInfo.operatingSystemVersion
+        let osStr = "\(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
+        let lang = effectiveAppLanguage()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .medium
+        let dateStr = dateFormatter.string(from: Date())
+
+        let lines: [String] = [
+            "ClipFeed Diagnostic Log",
+            "=====================",
+            "",
+            "Generated: \(dateStr)",
+            "App Version: \(version)",
+            "macOS: \(osStr)",
+            "App language (effective): \(lang)",
+            "",
+            "Settings",
+            "--------",
+            "App language (setting): \(AppSettings.appLanguage)",
+            "Appearance: \(AppSettings.appearanceMode)",
+            "Accent color: \(AppSettings.accentColorId)",
+            "Max items: \(AppSettings.maxItemCount)",
+            "Launch at login: \(AppSettings.launchAtLogin)",
+            "",
+            "Runtime log (last \(LogCapture.maxLinesDisplay) lines)",
+            "----------------------------------------",
+            LogCapture.getContent().isEmpty ? "(No log entries yet)" : LogCapture.getContent(),
+        ]
+        return lines.joined(separator: "\n")
+    }
+
+    private static func writeLogAndNotify(content: String, to url: URL, presentingWindow: NSWindow?) {
+        do {
+            try content.write(to: url, atomically: true, encoding: .utf8)
+            let alert = NSAlert()
+            alert.messageText = L("log_export_success", fallback: "Log exported successfully.")
+            alert.informativeText = url.path
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: L("alert_ok", fallback: "OK"))
+            if let window = presentingWindow {
+                alert.beginSheetModal(for: window) { _ in }
+            } else {
+                alert.runModal()
+            }
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = L("log_export_failed", fallback: "Failed to save log.")
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L("alert_ok", fallback: "OK"))
+            if let window = presentingWindow {
+                alert.beginSheetModal(for: window) { _ in }
+            } else {
+                alert.runModal()
+            }
+        }
     }
 
     private var aboutDetail: some View {

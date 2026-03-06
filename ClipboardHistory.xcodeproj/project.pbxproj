@@ -26,6 +26,7 @@
 		AA000034 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA000033 /* ServiceManagement.framework */; };
 		AA000035 /* VersionInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000036 /* VersionInfo.swift */; };
 		AA000037 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000038 /* UpdateChecker.swift */; };
+		AA000053 /* LogCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000052 /* LogCapture.swift */; };
 		AA00003D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00003C /* Assets.xcassets */; };
 		AA000050 /* AccentTintView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000051 /* AccentTintView.swift */; };
 /* End PBXBuildFile section */
@@ -52,6 +53,7 @@
 		AA000033 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		AA000036 /* VersionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/VersionInfo.swift"; sourceTree = SOURCE_ROOT; };
 		AA000038 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/UpdateChecker.swift"; sourceTree = SOURCE_ROOT; };
+		AA000052 /* LogCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/LogCapture.swift"; sourceTree = SOURCE_ROOT; };
 		AA000039 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AA00003A /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AA00003C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 				AA00002E /* SettingsView.swift */,
 				AA00002D /* SettingsWindowController.swift */,
 				AA000031 /* AppSettings.swift */,
+				AA000052 /* LogCapture.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -301,6 +304,7 @@
 				AA000032 /* AppSettings.swift in Sources */,
 				AA000035 /* VersionInfo.swift in Sources */,
 				AA000037 /* UpdateChecker.swift in Sources */,
+				AA000053 /* LogCapture.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
