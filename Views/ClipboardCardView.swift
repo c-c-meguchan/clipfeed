@@ -8,6 +8,7 @@ import AppKit
 private struct CachedThumbnailView: View {
     let data: Data?
     let isHighlit: Bool
+    @Environment(\.appAccentColor) private var appAccentColor
     static let size: CGFloat = 80
 
     var body: some View {
@@ -20,7 +21,7 @@ private struct CachedThumbnailView: View {
                     .clipped()
                     .overlay(
                         Rectangle()
-                            .fill(Color.accentColor.opacity(isHighlit ? 0.35 : 0))
+                            .fill(appAccentColor.opacity(isHighlit ? 0.35 : 0))
                             // withAnimation を使わず、このビューだけに animation を閉じ込める
                             .animation(
                                 isHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
@@ -35,6 +36,7 @@ private struct CachedThumbnailView: View {
 
 struct ClipboardCardView: View {
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
+    @Environment(\.appAccentColor) private var appAccentColor
     let item: ClipboardItem
     let index: Int
 
@@ -133,7 +135,7 @@ struct ClipboardCardView: View {
                             }
                         } else {
                             textLabel
-                                .foregroundColor(cardIsHighlit ? .accentColor : .primary)
+                                .foregroundColor(cardIsHighlit ? appAccentColor : .primary)
                                 .animation(
                                     cardIsHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
                                     value: cardIsHighlit
@@ -158,7 +160,7 @@ struct ClipboardCardView: View {
         .padding(.horizontal, 12)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(Color.accentColor.opacity(isFocused ? 0.9 : 0), lineWidth: 2)
+                .strokeBorder(appAccentColor.opacity(isFocused ? 0.9 : 0), lineWidth: 2)
         )
     }
 
@@ -166,11 +168,11 @@ struct ClipboardCardView: View {
         HStack(alignment: .top, spacing: 8) {
             Group {
                 Rectangle()
-                    .fill(Color.accentColor.opacity(0.6))
+                    .fill(appAccentColor.opacity(0.6))
                     .frame(width: 2)
                 Text(text)
                     .font(.caption)
-                    .foregroundColor(ocrIsHighlit ? .accentColor : .secondary)
+                    .foregroundColor(ocrIsHighlit ? appAccentColor : .secondary)
                     .animation(
                         ocrIsHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
                         value: ocrIsHighlit
@@ -188,7 +190,7 @@ struct ClipboardCardView: View {
         .padding(.vertical, 4)
         .padding(.horizontal, 6)
         .background(
-            Color.accentColor.opacity(ocrIsHighlit ? 0.26 : 0.06)
+            appAccentColor.opacity(ocrIsHighlit ? 0.26 : 0.06)
                 .animation(
                     ocrIsHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
                     value: ocrIsHighlit

@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import SwiftUI
 
 /// ClipFeed の設定キーとデフォルト値。UserDefaults で永続化する。
 enum AppSettings {
@@ -7,9 +8,48 @@ enum AppSettings {
     static let launchAtLoginKey = "ClipFeed.launchAtLogin"
     static let appearanceModeKey = "ClipFeed.appearanceMode"
     static let appLanguageKey = "ClipFeed.appLanguage"
+    static let accentColorKey = "ClipFeed.accentColor"
 
     static let maxItemCountOptions = [10, 30, 50, 100]
     static let defaultMaxItemCount = 50
+
+    /// アクセントカラー識別子: "blue" / "purple" / "orange" / "green" / "teal"。デフォルト "blue"。
+    static var accentColorId: String {
+        get {
+            let raw = UserDefaults.standard.string(forKey: accentColorKey) ?? "blue"
+            return Self.accentColorIds.contains(raw) ? raw : "blue"
+        }
+        set {
+            guard Self.accentColorIds.contains(newValue) else { return }
+            UserDefaults.standard.set(newValue, forKey: accentColorKey)
+            NotificationCenter.default.post(name: Self.accentColorDidChangeNotification, object: nil)
+        }
+    }
+
+    static let accentColorIds = ["blue", "purple", "orange", "green", "teal"]
+    static let accentColorDidChangeNotification = Notification.Name("AppSettings.accentColorDidChange")
+
+    /// 指定した ID に対応する SwiftUI Color（macOS 風、赤は含めない）
+    static func accentColor(for id: String) -> Color {
+        switch id {
+        case "purple": return Color(red: 0.61, green: 0.35, blue: 0.71)
+        case "orange": return Color(red: 1.0, green: 0.58, blue: 0.0)
+        case "green": return Color(red: 0.2, green: 0.78, blue: 0.35)
+        case "teal": return Color(red: 0.35, green: 0.68, blue: 0.77)
+        default: return Color(red: 0.25, green: 0.47, blue: 0.98) // blue (macOS standard)
+        }
+    }
+
+    /// 指定した ID に対応する NSColor（メニューバーアイコンなど AppKit 用）
+    static func accentNSColor(for id: String) -> NSColor {
+        switch id {
+        case "purple": return NSColor(red: 0.61, green: 0.35, blue: 0.71, alpha: 1)
+        case "orange": return NSColor(red: 1.0, green: 0.58, blue: 0.0, alpha: 1)
+        case "green": return NSColor(red: 0.2, green: 0.78, blue: 0.35, alpha: 1)
+        case "teal": return NSColor(red: 0.35, green: 0.68, blue: 0.77, alpha: 1)
+        default: return NSColor(red: 0.25, green: 0.47, blue: 0.98, alpha: 1)
+        }
+    }
 
     /// アプリの表示言語: "system"（端末の言語） / "ja" / "en"。日本語・英語以外の端末では system 時は英語にフォールバック。
     static var appLanguage: String {
@@ -95,6 +135,7 @@ enum AppSettings {
             launchAtLoginKey: true,
             appearanceModeKey: "system",
             appLanguageKey: "system",
+            accentColorKey: "blue",
         ])
     }
 }
