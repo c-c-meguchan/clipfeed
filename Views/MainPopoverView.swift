@@ -133,7 +133,6 @@ struct MainPopoverView: View {
                                     .animation(nil, value: clipboardViewModel.items)
                                     .matchedGeometryEffect(id: item.id, in: cardAnimation)
                                 }
-                                .padding(.bottom, 4)
                             }
                         }
                     }
