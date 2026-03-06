@@ -596,6 +596,12 @@ final class ClipboardViewModel: ObservableObject {
         isRestoringFocusOnPopoverOpen = false
     }
 
+    /// ヘッダー検索フィールドに「フォーカスを外せ」と伝える（MainPopoverView の復元時や「戻る」押下時）
+    @Published var forceSearchResignTrigger: Int = 0
+    func setSearchResign() {
+        forceSearchResignTrigger += 1
+    }
+
     /// ポップオーバーを開いたときに呼ぶ。フォーカスを「前回の位置に復元」または「最新にリセット」する。
     /// - Returns: 最新アイテムにフォーカスした場合は true（スクロールを最新へ）。復元した場合は false（スクロールをフォーカス中へ）。
     func restoreOrResetFocusOnPopoverOpen() -> Bool {
