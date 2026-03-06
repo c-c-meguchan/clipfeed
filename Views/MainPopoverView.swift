@@ -10,6 +10,12 @@ private struct SourceTab: Equatable {
     }
 }
 
+/// タブ横スクロールで選択タブを表示に収めるための ID（ScrollViewReader 用）
+private enum SourceTabId: Hashable {
+    case all
+    case source(String)
+}
+
 private struct ScrollOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -38,7 +44,6 @@ struct MainPopoverView: View {
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
     @Namespace private var cardAnimation
     @State private var lastFocusedIndex: Int?
-    @FocusState private var searchFieldFocused: Bool
     @State private var scrollOffset: CGFloat = 0
     @State private var itemFrames: [UUID: CGRect] = [:]
     @State private var scrollVisibleHeight: CGFloat = 400
@@ -74,40 +79,6 @@ struct MainPopoverView: View {
     var body: some View {
         VStack(spacing: 0) {
             sourceTabBar
-            // スクロール位置に応じて少しだけ隠れる検索フィールド（フィードの上部に「浮かぶ」イメージ）
-            let hideProgress = min(max(-scrollOffset / 40.0, 0), 1)   // 下方向に 40pt スクロールでほぼ消える
-            let yOffset = -hideProgress * 8
-
-            TextField(
-                L("search_placeholder", fallback: "Search clipboard"),
-                text: Binding(
-                    get: { clipboardViewModel.searchText },
-                    set: { clipboardViewModel.updateSearchText($0) }
-                )
-            )
-            .textFieldStyle(.plain)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8) // ほんの少し高さを大きく
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(NSColor.windowBackgroundColor).opacity(1.0))
-            )
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
-            .padding(.bottom, 2)
-            .focused($searchFieldFocused)
-            .opacity(1 - hideProgress)
-            .offset(y: yOffset)
-            .onChange(of: searchFieldFocused) { focused in
-                if clipboardViewModel.isRestoringFocusOnPopoverOpen && focused {
-                    return
-                }
-                clipboardViewModel.isSearchFocused = focused
-                if focused {
-                    clipboardViewModel.focusArea = .search
-                    clipboardViewModel.focusedItemID = nil
-                }
-            }
             ZStack {
                 GeometryReader { zstackGeo in
                     Color.clear.preference(key: ScrollVisibleHeightPreferenceKey.self, value: zstackGeo.size.height)
@@ -135,7 +106,7 @@ struct MainPopoverView: View {
                                         .foregroundColor(.secondary)
                                     Button("戻る esc") {
                                         clipboardViewModel.clearSearchAndReturnToNavigation()
-                                        searchFieldFocused = false
+                                        clipboardViewModel.setSearchResign()
                                     }
                                     .buttonStyle(BackButtonStyle())
                                 }
@@ -183,9 +154,9 @@ struct MainPopoverView: View {
                         } else {
                             lastFocusedIndex = nil
                         }
-                        DispatchQueue.main.async { searchFieldFocused = false }
+                        DispatchQueue.main.async { clipboardViewModel.setSearchResign() }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
-                            searchFieldFocused = false
+                            clipboardViewModel.setSearchResign()
                             if focusLatest {
                                 clipboardViewModel.ensureFeedFocus()
                                 scrollToLatest(proxy)
@@ -247,11 +218,7 @@ struct MainPopoverView: View {
                 clipboardViewModel.moveFocus(direction)
             }
             .onChange(of: clipboardViewModel.focusArea) { area in
-                switch area {
-                case .search:
-                    searchFieldFocused = true
-                case .feed:
-                    searchFieldFocused = false
+                if area == .feed {
                     clipboardViewModel.ensureFeedFocus()
                 }
             }
@@ -262,19 +229,28 @@ struct MainPopoverView: View {
     }
 
     private var sourceTabBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                // 「すべて」チップ
-                sourceChip(name: L("filter_all", fallback: "All"), iconData: nil, source: nil)
-                // コピー元別チップ
-                ForEach(sourceTabs, id: \.name) { tab in
-                    sourceChip(name: localizedSourceName(tab.name) ?? tab.name, iconData: tab.iconData, source: tab.name)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    sourceChip(name: L("filter_all", fallback: "All"), iconData: nil, source: nil)
+                        .id(SourceTabId.all)
+                    ForEach(sourceTabs, id: \.name) { tab in
+                        sourceChip(name: localizedSourceName(tab.name) ?? tab.name, iconData: tab.iconData, source: tab.name)
+                            .id(SourceTabId.source(tab.name))
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
+                .padding(.bottom, 8)
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .onChange(of: clipboardViewModel.selectedSource) { newSource in
+                let id = newSource.map { SourceTabId.source($0) } ?? .all
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo(id, anchor: .center)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
         }
-        .background(Color(NSColor.controlBackgroundColor))
     }
 
     /// 表示順の最新（一番下）にスクロール
