@@ -42,10 +42,12 @@ final class SettingsWindowController: NSWindowController {
         let observer = AppLanguageObserver.shared
         if let vm = clipboardViewModel {
             hostingController.rootView = AnyView(
-                SettingsView()
-                    .environmentObject(vm)
-                    .environmentObject(observer)
-                    .id(observer.currentLanguage + "-\(observer.languageChangeSeed)")
+                AccentTintView {
+                    SettingsView()
+                        .environmentObject(vm)
+                        .environmentObject(observer)
+                        .id(observer.currentLanguage + "-\(observer.languageChangeSeed)")
+                }
             )
         }
         guard let window else { return }

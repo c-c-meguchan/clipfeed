@@ -42,6 +42,7 @@ private struct ScrollVisibleHeightPreferenceKey: PreferenceKey {
 
 struct MainPopoverView: View {
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
+    @Environment(\.appAccentColor) private var appAccentColor
     @Namespace private var cardAnimation
     @State private var lastFocusedIndex: Int?
     @State private var scrollOffset: CGFloat = 0
@@ -280,7 +281,7 @@ struct MainPopoverView: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(isSelected ? Color.accentColor : Color.white.opacity(0.06))
+            .background(isSelected ? appAccentColor : Color.white.opacity(0.06))
             .clipShape(Capsule())
             .foregroundColor(isSelected ? .white : .primary)
         }

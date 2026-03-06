@@ -5,6 +5,7 @@ import ServiceManagement
 /// 設定画面。左サイドバーに大メニュー（設定 / アプリバージョン）、右に小メニューと内容。
 struct SettingsView: View {
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
+    @Environment(\.appAccentColor) private var appAccentColor
 
     enum SidebarItem: String, CaseIterable {
         case settings
@@ -36,6 +37,7 @@ struct SettingsView: View {
     @State private var launchAtLogin: Bool = AppSettings.launchAtLogin
     @State private var appearanceMode: String = AppSettings.appearanceMode
     @State private var appLanguage: String = AppSettings.appLanguage
+    @State private var accentColorId: String = AppSettings.accentColorId
     @State private var showClearConfirm = false
 
     var body: some View {
@@ -45,7 +47,7 @@ struct SettingsView: View {
                     Text(item.displayTitle)
                 } icon: {
                     Image(systemName: item.iconName)
-                        .foregroundStyle(.blue)
+                        .foregroundColor(appAccentColor)
                 }
                 .tag(item)
             }
@@ -73,6 +75,7 @@ struct SettingsView: View {
             launchAtLogin = AppSettings.launchAtLogin
             appearanceMode = AppSettings.appearanceMode
             appLanguage = AppSettings.appLanguage
+            accentColorId = AppSettings.accentColorId
         }
         .confirmationDialog(L("clear_history_title", fallback: "Clear all history"), isPresented: $showClearConfirm) {
             Button(L("delete", fallback: "Delete"), role: .destructive) {
@@ -113,6 +116,15 @@ struct SettingsView: View {
                     AppSettings.applyAppearance()
                 }
 
+                Picker(L("accent_color", fallback: "Accent color"), selection: $accentColorId) {
+                    ForEach(AppSettings.accentColorIds, id: \.self) { id in
+                        Text(L("accent_\(id)", fallback: Self.accentColorDisplayName(id))).tag(id)
+                    }
+                }
+                .onChange(of: accentColorId) { newValue in
+                    AppSettings.accentColorId = newValue
+                }
+
                 Picker(L("max_items_label", fallback: "Max items to save"), selection: $maxItemCount) {
                     ForEach(AppSettings.maxItemCountOptions, id: \.self) { n in
                         Text(String(format: L("items_count_format", fallback: "%d items"), n)).tag(n)
@@ -137,6 +149,17 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private static func accentColorDisplayName(_ id: String) -> String {
+        switch id {
+        case "blue": return "Blue"
+        case "purple": return "Purple"
+        case "orange": return "Orange"
+        case "green": return "Green"
+        case "teal": return "Teal"
+        default: return "Blue"
+        }
     }
 
     private var shortcutsDetail: some View {

@@ -83,10 +83,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover?.contentSize = NSSize(width: 400, height: 600)
         popover?.behavior = .transient
         popover?.contentViewController = NSHostingController(
-            rootView: MenuBarView()
-                .environmentObject(viewModel)
-                .environmentObject(clipboardViewModel)
-                .environmentObject(AppLanguageObserver.shared)
+            rootView: AccentTintView {
+                MenuBarView()
+                    .environmentObject(viewModel)
+                    .environmentObject(clipboardViewModel)
+                    .environmentObject(AppLanguageObserver.shared)
+            }
         )
 
         addLocalMonitor()
@@ -373,11 +375,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem?.button else { return }
         button.wantsLayer = true
 
-        // 青いアイコン（paletteColors でカラーレンダリング、isTemplate = false）
-        guard let blueImage = NSImage(
+        // アクセント色のアイコン（paletteColors でカラーレンダリング、isTemplate = false）
+        let accentNS = AppSettings.accentNSColor(for: AppSettings.accentColorId)
+        guard let accentImage = NSImage(
             systemSymbolName: "doc.on.clipboard",
             accessibilityDescription: nil
-        )?.withSymbolConfiguration(.init(paletteColors: [.systemBlue])) else { return }
+        )?.withSymbolConfiguration(.init(paletteColors: [accentNS])) else { return }
 
         // テンプレートアイコン（通常状態）
         let templateImage = NSImage(
@@ -386,8 +389,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         templateImage?.isTemplate = true
 
-        // 即座に青アイコンへ切り替え
-        button.image = blueImage
+        // 即座にアクセント色アイコンへ切り替え
+        button.image = accentImage
 
         // 800ms かけてテンプレートへフェードバック
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
