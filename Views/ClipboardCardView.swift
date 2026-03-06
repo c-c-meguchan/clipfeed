@@ -207,7 +207,7 @@ struct ClipboardCardView: View {
                 Button(item.type == .image && item.ocrResult == nil ? "\(L("image", fallback: "Image")) ↩" : "\(L("copy", fallback: "Copy")) ↩") {
                     clipboardViewModel.reCopyItem(item)
                 }
-                .buttonStyle(ShortcutButtonStyle())
+                .buttonStyle(ShortcutButtonStyle(accentColor: appAccentColor))
             } else if index >= 0 && index < 9 {
                 Button(item.type == .image && item.ocrResult == nil ? "\(L("image", fallback: "Image")) ⌘\(index + 1)" : "\(L("copy", fallback: "Copy")) ⌘\(index + 1)") {
                     clipboardViewModel.reCopyItem(item)
@@ -224,12 +224,12 @@ struct ClipboardCardView: View {
                     Button("\(L("text", fallback: "Text")) ⌘⌥\(index + 1)") {
                         clipboardViewModel.ocrCopy(item)
                     }
-                    .buttonStyle(ShortcutButtonStyle())
+                    .buttonStyle(ShortcutButtonStyle(accentColor: isFocused ? appAccentColor : nil))
                 } else {
                     Button(L("text", fallback: "Text")) {
                         clipboardViewModel.ocrCopy(item)
                     }
-                    .buttonStyle(ShortcutButtonStyle())
+                    .buttonStyle(ShortcutButtonStyle(accentColor: isFocused ? appAccentColor : nil))
                 }
             }
         }
@@ -311,15 +311,25 @@ private struct CreatedLabelContent: View, Equatable {
     }
 }
 
-/// [Copy ⌘1] / [Text ⌘⌥1] 用の小さなボタンスタイル
+/// [Copy ⌘1] / [Text ⌘⌥1] 用の小さなボタンスタイル。accentColor を渡すと背景をアクセント・文字を白にする（フォーカス中のカード用）。
 private struct ShortcutButtonStyle: ButtonStyle {
+    var accentColor: Color? = nil
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 11, weight: .medium, design: .monospaced))
-            .foregroundColor(.secondary)
+            .foregroundColor(accentColor != nil ? .white : .secondary)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(Color.secondary.opacity(configuration.isPressed ? 0.2 : 0.08))
+            .background(
+                Group {
+                    if let accent = accentColor {
+                        accent.opacity(configuration.isPressed ? 0.85 : 1.0)
+                    } else {
+                        Color.secondary.opacity(configuration.isPressed ? 0.2 : 0.08)
+                    }
+                }
+            )
             .cornerRadius(4)
     }
 }
