@@ -17,12 +17,31 @@ private struct ScrollOffsetPreferenceKey: PreferenceKey {
     }
 }
 
+/// 各カードの frame（clipboardScroll 座標）を集約
+private struct ItemFramesPreferenceKey: PreferenceKey {
+    static var defaultValue: [UUID: CGRect] { [:] }
+    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+/// スクロール領域の表示高さ
+private struct ScrollVisibleHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        if next > 0 { value = next }
+    }
+}
+
 struct MainPopoverView: View {
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
     @Namespace private var cardAnimation
     @State private var lastFocusedIndex: Int?
     @FocusState private var searchFieldFocused: Bool
     @State private var scrollOffset: CGFloat = 0
+    @State private var itemFrames: [UUID: CGRect] = [:]
+    @State private var scrollVisibleHeight: CGFloat = 400
 
     /// items から sourceAppName を最新出現順で重複除去し、アイコンデータ付きで生成
     private var sourceTabs: [SourceTab] {
@@ -80,17 +99,25 @@ struct MainPopoverView: View {
             .opacity(1 - hideProgress)
             .offset(y: yOffset)
             .onChange(of: searchFieldFocused) { focused in
+                if clipboardViewModel.isRestoringFocusOnPopoverOpen && focused {
+                    return
+                }
                 clipboardViewModel.isSearchFocused = focused
                 if focused {
                     clipboardViewModel.focusArea = .search
-                    // 検索窓にフォーカスがある間はフィード側のフォーカスを外す
                     clipboardViewModel.focusedItemID = nil
                 }
             }
             ZStack {
+                GeometryReader { zstackGeo in
+                    Color.clear.preference(key: ScrollVisibleHeightPreferenceKey.self, value: zstackGeo.size.height)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
+
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        VStack(spacing: 0) {
                             // スクロール位置計測用（先頭付近のオフセットを取得）
                             GeometryReader { geo in
                                 Color.clear
@@ -106,14 +133,11 @@ struct MainPopoverView: View {
                                     Text("履歴が見つかりません")
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.secondary)
-                                    Button("⏎ 戻る") {
-                                        // 検索状態をリセットしてナビゲーションモードに戻す
-                                        clipboardViewModel.updateSearchText("")
-                                        clipboardViewModel.focusArea = .feed
-                                        clipboardViewModel.ensureFeedFocus()
+                                    Button("戻る esc") {
+                                        clipboardViewModel.clearSearchAndReturnToNavigation()
                                         searchFieldFocused = false
                                     }
-                                    .buttonStyle(.borderedProminent)
+                                    .buttonStyle(BackButtonStyle())
                                 }
                                 .frame(maxWidth: .infinity, minHeight: 160)
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -125,9 +149,19 @@ struct MainPopoverView: View {
                                         ClipboardCardView(item: item, index: shortcutIndex)
                                         Divider()
                                     }
+                                    .id(item.id)
+                                    .background(
+                                        GeometryReader { geo in
+                                            Color.clear.preference(
+                                                key: ItemFramesPreferenceKey.self,
+                                                value: [item.id: geo.frame(in: .named("clipboardScroll"))]
+                                            )
+                                        }
+                                    )
                                     .animation(nil, value: clipboardViewModel.items)
                                     .matchedGeometryEffect(id: item.id, in: cardAnimation)
                                 }
+                                .padding(.bottom, 4)
                             }
                         }
                     }
@@ -135,22 +169,35 @@ struct MainPopoverView: View {
                     .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                         scrollOffset = value
                     }
-                    // ポップオーバーを開いたとき → 最新アイテムへスクロール
+                    .onPreferenceChange(ItemFramesPreferenceKey.self) { value in
+                        itemFrames = value
+                    }
+                    .onDisappear {
+                        clipboardViewModel.savePopoverCloseState()
+                    }
+                    // ポップオーバーを開いたとき → 前回のフォーカスを復元 or 最新にリセットし、検索にはフォーカスしない
                     .onAppear {
-                        DispatchQueue.main.async {
-                            // 初期状態では必ずフィード側にフォーカスを置き、検索フィールドのフォーカスを外す
+                        let focusLatest = clipboardViewModel.restoreOrResetFocusOnPopoverOpen()
+                        if let fid = clipboardViewModel.focusedItemID, let idx = indexByID[fid] {
+                            lastFocusedIndex = idx
+                        } else {
+                            lastFocusedIndex = nil
+                        }
+                        DispatchQueue.main.async { searchFieldFocused = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
                             searchFieldFocused = false
-                            clipboardViewModel.isSearchFocused = false
-                            clipboardViewModel.focusArea = .feed
-                            // 最新アイテム（一番下）にフォーカス
-                            let lastID = clipboardViewModel.displayedItems.last?.id
-                            clipboardViewModel.focusedItemID = lastID
-                            if let lastID, let idx = indexByID[lastID] {
-                                lastFocusedIndex = idx
+                            if focusLatest {
+                                clipboardViewModel.ensureFeedFocus()
+                                scrollToLatest(proxy)
                             } else {
-                                lastFocusedIndex = nil
+                                clipboardViewModel.ensureFeedFocus()
+                                if let id = clipboardViewModel.focusedItemID {
+                                    proxy.scrollTo(id, anchor: .center)
+                                }
                             }
-                            scrollToLatest(proxy)
+                            clipboardViewModel.endRestoringFocusOnPopoverOpen()
+                            // 検索フィールドが first responder のまま残っていると矢印キーが効かないため、ウィンドウから明示的に外す
+                            NSApp.keyWindow?.makeFirstResponder(nil)
                         }
                     }
                     // 新規アイテム追加時
@@ -167,20 +214,22 @@ struct MainPopoverView: View {
                             scrollToLatest(proxy)
                         }
                     }
-                    // フォーカス移動時: フォーカス中アイテムが常に表示領域内に収まるようにする
+                    // フォーカス移動時: フォーカス中アイテムが表示外に出る場合のみスクロール（中腹では端に固定されず現在地を維持）
                     .onChange(of: clipboardViewModel.focusedItemID) { id in
                         guard let id else { return }
                         guard let newIndex = indexByID[id] else { return }
                         let previous = lastFocusedIndex
                         lastFocusedIndex = newIndex
-                        // 初回はスクロールしない（onAppear 側で処理）
                         guard let prev = previous, prev != newIndex else { return }
-                        let anchor: UnitPoint = newIndex > prev ? .bottom : .top
-                        DispatchQueue.main.async {
-                            withAnimation(.easeOut(duration: 0.15)) {
-                                proxy.scrollTo(id, anchor: anchor)
-                            }
+
+                        let visibleTop: CGFloat = -scrollOffset
+                        let visibleBottom: CGFloat = -scrollOffset + scrollVisibleHeight
+                        if let frame = itemFrames[id] {
+                            let inView = frame.minY >= visibleTop - 1 && frame.maxY <= visibleBottom + 1
+                            if inView { return }
                         }
+                        let anchor: UnitPoint = newIndex > prev ? .bottom : .top
+                        proxy.scrollTo(id, anchor: anchor)
                     }
                 }
 
@@ -206,6 +255,9 @@ struct MainPopoverView: View {
                     clipboardViewModel.ensureFeedFocus()
                 }
             }
+            .onPreferenceChange(ScrollVisibleHeightPreferenceKey.self) { value in
+                if value > 0 { scrollVisibleHeight = value }
+            }
         }
     }
 
@@ -225,8 +277,9 @@ struct MainPopoverView: View {
         .background(Color(NSColor.controlBackgroundColor))
     }
 
+    /// 表示順の最新（一番下）にスクロール
     private func scrollToLatest(_ proxy: ScrollViewProxy) {
-        guard let id = clipboardViewModel.filteredItems.first?.id else { return }
+        guard let id = clipboardViewModel.displayedItems.last?.id else { return }
         proxy.scrollTo(id, anchor: .bottom)
     }
 
@@ -256,6 +309,19 @@ struct MainPopoverView: View {
             .foregroundColor(isSelected ? .white : .primary)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// 検索0件時の「戻る」用。コピーボタン（ShortcutButtonStyle）と同じ目立ち度・アクセントなし
+private struct BackButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 11, weight: .medium, design: .monospaced))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color.secondary.opacity(configuration.isPressed ? 0.2 : 0.08))
+            .cornerRadius(4)
     }
 }
 

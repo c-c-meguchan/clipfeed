@@ -197,11 +197,16 @@ struct ClipboardCardView: View {
         .cornerRadius(4)
     }
 
-    /// 再コピー用 [Copy ⌘N]/[Copy] または画像OCR前は [Image ⌘N]/[Image]。画像用 [Text ⌘⌥N]/[Text] は OCR 前のみ。
+    /// 再コピー用。フォーカス中は [Copy Enter]/[Image Enter]、それ以外は [Copy ⌘N]/[Image ⌘N]。画像用 [Text ⌘⌥N] は変化なし。
     @ViewBuilder
     private var actionButtons: some View {
         HStack(spacing: 6) {
-            if index >= 0 && index < 9 {
+            if isFocused {
+                Button(item.type == .image && item.ocrResult == nil ? "\(L("image", fallback: "Image")) ↩" : "\(L("copy", fallback: "Copy")) ↩") {
+                    clipboardViewModel.reCopyItem(item)
+                }
+                .buttonStyle(ShortcutButtonStyle())
+            } else if index >= 0 && index < 9 {
                 Button(item.type == .image && item.ocrResult == nil ? "\(L("image", fallback: "Image")) ⌘\(index + 1)" : "\(L("copy", fallback: "Copy")) ⌘\(index + 1)") {
                     clipboardViewModel.reCopyItem(item)
                 }

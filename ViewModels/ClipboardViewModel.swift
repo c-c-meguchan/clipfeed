@@ -32,6 +32,14 @@ final class ClipboardViewModel: ObservableObject {
     @Published var focusArea: FocusArea = .feed
     @Published var isSearchFocused: Bool = false
 
+    /// ポップオーバーを閉じたときの状態（再開時にフォーカス復元 or 最新にリセットの判定に使用）
+    private var lastFocusedItemIDWhenClosed: UUID?
+    private var lastFilteredCountWhenClosed: Int?
+    private var lastLatestItemIDWhenClosed: UUID?
+
+    /// ポップオーバーを開いた直後のフォーカス復元中。true の間は検索にフォーカスが移っても focusedItemID を消さない（AppDelegate で表示前に true にする）
+    var isRestoringFocusOnPopoverOpen: Bool = false
+
     @AppStorage("maxItems") private var maxItems: Int = 50
 
     /// コピー元別フィルタ後のアイテム（検索は含めない）
@@ -550,12 +558,80 @@ final class ClipboardViewModel: ObservableObject {
         reCopyItem(item)
     }
 
+    /// 検索状態をクリアしてナビゲーションモードに戻す（Esc や「Esc 戻る」から使用）
+    func clearSearchAndReturnToNavigation() {
+        searchText = ""
+        inputMode = .navigation
+        isSearchFocused = false
+        focusArea = .feed
+        repairFocusIfNeeded()
+    }
+
     /// 外部から「フィード側にフォーカスを戻したい」ときに呼ぶラッパー
     func ensureFeedFocus() {
         // 検索フィールドから確実にフォーカスを外し、フィード用のフォーカスを復活させる
         isSearchFocused = false
         focusArea = .feed
         repairFocusIfNeeded()
+    }
+
+    /// ポップオーバーを閉じる直前に呼ぶ。次回開いたときの復元判定用に現在の状態を保存する
+    func savePopoverCloseState() {
+        lastFilteredCountWhenClosed = filteredItems.count
+        lastLatestItemIDWhenClosed = displayedItems.last?.id
+        if focusArea == .feed, !isSearchFocused {
+            lastFocusedItemIDWhenClosed = focusedItemID
+        } else {
+            lastFocusedItemIDWhenClosed = nil
+        }
+    }
+
+    /// ポップオーバーを表示する直前に AppDelegate から呼ぶ。表示前に true にすることで検索フィールドがフォーカスを奪っても focusedItemID を消さない
+    func beginRestoringFocusOnPopoverOpen() {
+        isRestoringFocusOnPopoverOpen = true
+    }
+
+    /// フォーカス復元処理が終わったら View の遅延ブロックから呼ぶ
+    func endRestoringFocusOnPopoverOpen() {
+        isRestoringFocusOnPopoverOpen = false
+    }
+
+    /// ポップオーバーを開いたときに呼ぶ。フォーカスを「前回の位置に復元」または「最新にリセット」する。
+    /// - Returns: 最新アイテムにフォーカスした場合は true（スクロールを最新へ）。復元した場合は false（スクロールをフォーカス中へ）。
+    func restoreOrResetFocusOnPopoverOpen() -> Bool {
+        focusArea = .feed
+        isSearchFocused = false
+
+        guard !displayedItems.isEmpty else {
+            focusedItemID = nil
+            return true
+        }
+
+        let currentCount = filteredItems.count
+        let currentLatestID = displayedItems.last?.id
+
+        // 初回起動 or 閉じている間に新規コピーが追加された → 最新にフォーカス
+        if lastFilteredCountWhenClosed == nil {
+            focusedItemID = currentLatestID
+            lastFilteredCountWhenClosed = currentCount
+            lastLatestItemIDWhenClosed = currentLatestID
+            return true
+        }
+        if currentCount != lastFilteredCountWhenClosed! || currentLatestID != lastLatestItemIDWhenClosed! {
+            focusedItemID = currentLatestID
+            lastFilteredCountWhenClosed = currentCount
+            lastLatestItemIDWhenClosed = currentLatestID
+            return true
+        }
+
+        // 前回のフォーカス位置を復元（表示中に残っていれば）
+        if let saved = lastFocusedItemIDWhenClosed,
+           displayedItems.contains(where: { $0.id == saved }) {
+            focusedItemID = saved
+            return false
+        }
+        focusedItemID = currentLatestID
+        return true
     }
 
     /// 画像アイテムを「名前をつけて保存」— 本体の imageData（サムネイルではない）を NSSavePanel で保存
