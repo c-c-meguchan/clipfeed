@@ -32,6 +32,9 @@ final class ClipboardViewModel: ObservableObject {
     @Published var focusArea: FocusArea = .feed
     @Published var isSearchFocused: Bool = false
 
+    /// 検索フィールドが実際に first responder か（AppKit から報告）。true の間はカードにフォーカスを付けず表示もしない
+    @Published var isSearchFieldActuallyFirstResponder: Bool = false
+
     /// ショートカット ⌘1〜⌘9 の割り当て順（画面内で上から順）。index 0 = ⌘1 = 一番上の表示アイテム。
     @Published var shortcutOrderedIDs: [UUID] = []
 
@@ -94,6 +97,11 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     private func repairFocusIfNeeded() {
+        // 検索フィールドが実際に first responder の間は絶対にカードにフォーカスを付けない
+        if isSearchFieldActuallyFirstResponder {
+            focusedItemID = nil
+            return
+        }
         // 検索フィールドにフォーカスがある間は、フィード側のフォーカスを一切復活させない
         if isSearchFocused || focusArea == .search {
             focusedItemID = nil
@@ -132,9 +140,10 @@ final class ClipboardViewModel: ObservableObject {
     }
     
     func moveFocus(_ direction: MoveCommandDirection) {
-        guard inputMode == .navigation else { return }
+        // フィードにフォーカスがあり、検索フィールドが first responder でないときだけ移動可能（検索テキストありでも Tab でフィードに移れば上下移動可）
+        guard focusArea == .feed, !isSearchFieldActuallyFirstResponder else { return }
 
-        // フィードにいてフォーカスが無い場合は、まず適切なアイテムにフォーカスを復元する
+        // フォーカスが無い場合は、まず検索結果の先頭などにフォーカスを合わせる
         if focusedItemID == nil {
             repairFocusIfNeeded()
         }
@@ -600,6 +609,24 @@ final class ClipboardViewModel: ObservableObject {
     @Published var forceSearchResignTrigger: Int = 0
     func setSearchResign() {
         forceSearchResignTrigger += 1
+    }
+
+    /// 検索フィールドが実際に first responder のときに呼ぶ。状態がずれていれば検索フォーカスに揃え、カードのフォーカスを外す（見た目のずれ防止）
+    func syncSearchFocusStateIfNeeded() {
+        guard !isRestoringFocusOnPopoverOpen else { return }
+        if isSearchFocused && focusArea == .search && focusedItemID == nil { return }
+        isSearchFocused = true
+        focusArea = .search
+        focusedItemID = nil
+    }
+
+    /// 検索フィールドの first responder 状態を AppKit から報告する。true の間は repairFocusIfNeeded でカードにフォーカスを付けない
+    func setSearchFieldActuallyFirstResponder(_ value: Bool) {
+        guard isSearchFieldActuallyFirstResponder != value else { return }
+        isSearchFieldActuallyFirstResponder = value
+        if value {
+            syncSearchFocusStateIfNeeded()
+        }
     }
 
     /// ポップオーバーを開いたときに呼ぶ。フォーカスを「前回の位置に復元」または「最新にリセット」する。

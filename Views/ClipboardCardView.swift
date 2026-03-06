@@ -50,7 +50,7 @@ struct ClipboardCardView: View {
     }()
 
     private var isFocused: Bool {
-        clipboardViewModel.focusedItemID == item.id
+        clipboardViewModel.focusedItemID == item.id && !clipboardViewModel.isSearchFieldActuallyFirstResponder
     }
 
     /// 親カード（通常コピー）のハイライト判定 — .parent(item.id) の完全一致のみ

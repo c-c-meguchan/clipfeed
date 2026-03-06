@@ -198,11 +198,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
 
-            // ↑ / ↓ : navigation モード時のみフォーカス移動
+            // ↑ / ↓ : フィードにフォーカスがあるときはフォーカス移動（検索テキストありでも Tab でフィードに移れば可）
             if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift),
                let vm = self.clipboardViewModel,
-               vm.inputMode == .navigation,
-               vm.focusArea == .feed {
+               vm.focusArea == .feed,
+               !vm.isSearchFieldActuallyFirstResponder {
                 if event.keyCode == 126 { // 上矢印
                     vm.moveFocus(.up)
                     return nil
