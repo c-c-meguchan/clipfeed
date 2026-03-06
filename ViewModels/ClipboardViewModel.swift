@@ -701,6 +701,7 @@ final class ClipboardViewModel: ObservableObject {
 
     private func showReCopyToast() {
         showToastMessage(L("toast_copied", fallback: "Copied to clipboard"))
+        NotificationCenter.default.post(name: AppDelegate.closePopoverAfterReCopyNotification, object: nil)
     }
 
     private func showToastMessage(_ message: String) {

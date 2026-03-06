@@ -95,6 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registerCarbonHotKey()
         observeAppearanceChanges()
         observeOpenSettings()
+        observeClosePopoverAfterReCopy()
 
         UpdateChecker.shared.checkForUpdates()
 
@@ -309,6 +310,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     static let openSettingsNotification = Notification.Name("AppDelegate.openSettings")
+    static let closePopoverAfterReCopyNotification = Notification.Name("AppDelegate.closePopoverAfterReCopy")
 
     private func observeOpenSettings() {
         NotificationCenter.default.addObserver(
@@ -317,6 +319,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] _ in
             self?.openSettings()
+        }
+    }
+
+    /// 再コピー／OCRコピー後にフィードバックトーストが消えるタイミング（0.8秒後）でポップオーバーを閉じる
+    private func observeClosePopoverAfterReCopy() {
+        NotificationCenter.default.addObserver(
+            forName: Self.closePopoverAfterReCopyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, let popover = self.popover, popover.isShown else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                self?.togglePopover()
+            }
         }
     }
 
