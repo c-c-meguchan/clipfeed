@@ -47,6 +47,10 @@ struct ClipboardCardView: View {
         return f
     }()
 
+    private var isFocused: Bool {
+        clipboardViewModel.focusedItemID == item.id
+    }
+
     /// 親カード（通常コピー）のハイライト判定 — .parent(item.id) の完全一致のみ
     private var isCardHighlighted: Bool {
         clipboardViewModel.highlightedTarget == .parent(item.id)
@@ -152,6 +156,10 @@ struct ClipboardCardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.accentColor.opacity(isFocused ? 0.9 : 0), lineWidth: 2)
+        )
     }
 
     private func ocrResultView(_ text: String) -> some View {
@@ -189,11 +197,16 @@ struct ClipboardCardView: View {
         .cornerRadius(4)
     }
 
-    /// 再コピー用 [Copy ⌘N]/[Copy] または画像OCR前は [Image ⌘N]/[Image]。画像用 [Text ⌘⌥N]/[Text] は OCR 前のみ。
+    /// 再コピー用。フォーカス中は [Copy Enter]/[Image Enter]、それ以外は [Copy ⌘N]/[Image ⌘N]。画像用 [Text ⌘⌥N] は変化なし。
     @ViewBuilder
     private var actionButtons: some View {
         HStack(spacing: 6) {
-            if index >= 0 && index < 9 {
+            if isFocused {
+                Button(item.type == .image && item.ocrResult == nil ? "\(L("image", fallback: "Image")) ↩" : "\(L("copy", fallback: "Copy")) ↩") {
+                    clipboardViewModel.reCopyItem(item)
+                }
+                .buttonStyle(ShortcutButtonStyle())
+            } else if index >= 0 && index < 9 {
                 Button(item.type == .image && item.ocrResult == nil ? "\(L("image", fallback: "Image")) ⌘\(index + 1)" : "\(L("copy", fallback: "Copy")) ⌘\(index + 1)") {
                     clipboardViewModel.reCopyItem(item)
                 }

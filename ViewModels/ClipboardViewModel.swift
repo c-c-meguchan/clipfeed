@@ -10,16 +10,39 @@ enum CopyTarget: Equatable {
     case ocr(UUID)
 }
 
+enum InputMode {
+    case navigation
+    case search
+}
+
+enum FocusArea {
+    case feed
+    case search
+}
+
 final class ClipboardViewModel: ObservableObject {
     @Published var items: [ClipboardItem] = []
     @Published var showToast: Bool = false
     @Published var toastMessage: String = ""
     @Published var selectedSource: String?
     @Published var highlightedTarget: CopyTarget?
+    @Published var searchText: String = ""
+    @Published var inputMode: InputMode = .navigation
+    @Published var focusedItemID: UUID?
+    @Published var focusArea: FocusArea = .feed
+    @Published var isSearchFocused: Bool = false
+
+    /// ポップオーバーを閉じたときの状態（再開時にフォーカス復元 or 最新にリセットの判定に使用）
+    private var lastFocusedItemIDWhenClosed: UUID?
+    private var lastFilteredCountWhenClosed: Int?
+    private var lastLatestItemIDWhenClosed: UUID?
+
+    /// ポップオーバーを開いた直後のフォーカス復元中。true の間は検索にフォーカスが移っても focusedItemID を消さない（AppDelegate で表示前に true にする）
+    var isRestoringFocusOnPopoverOpen: Bool = false
 
     @AppStorage("maxItems") private var maxItems: Int = 50
 
-    /// コピー元別フィルタ後のアイテム
+    /// コピー元別フィルタ後のアイテム（検索は含めない）
     var filteredItems: [ClipboardItem] {
         guard let source = selectedSource else { return items }
         return items.filter { $0.sourceAppName == source }
@@ -28,7 +51,19 @@ final class ClipboardViewModel: ObservableObject {
     /// View に渡す表示順（古い順 → 最新が末尾 = チャット型）
     /// reversed() を View 側で呼ばないためここで計算する
     var displayedItems: [ClipboardItem] {
-        filteredItems.reversed()
+        let base = filteredItems
+        // 検索テキストが空のときは従来どおり
+        guard !searchText.isEmpty else {
+            return base.reversed()
+        }
+        let query = searchText
+        // text / plainText と 読み込み済み OCR テキストを検索対象にする
+        let searched = base.filter { item in
+            let text = item.plainText ?? item.text ?? ""
+            let ocr = item.ocrText ?? item.ocrResult ?? ""
+            return text.localizedCaseInsensitiveContains(query) || ocr.localizedCaseInsensitiveContains(query)
+        }
+        return searched.reversed()
     }
 
     /// タブ生成用：items から sourceAppName を最新出現順で重複除去したリスト
@@ -42,6 +77,41 @@ final class ClipboardViewModel: ObservableObject {
             }
         }
         return result
+    }
+
+    // MARK: - Search & Focus
+
+    func updateSearchText(_ text: String) {
+        searchText = text
+
+        if text.isEmpty {
+            inputMode = .navigation
+        } else {
+            inputMode = .search
+        }
+
+        repairFocusIfNeeded()
+    }
+
+    private func repairFocusIfNeeded() {
+        // 検索フィールドにフォーカスがある間は、フィード側のフォーカスを一切復活させない
+        if isSearchFocused || focusArea == .search {
+            focusedItemID = nil
+            return
+        }
+
+        guard !displayedItems.isEmpty else {
+            focusedItemID = nil
+            return
+        }
+
+        if let focused = focusedItemID,
+           displayedItems.contains(where: { $0.id == focused }) {
+            return
+        }
+
+        // 最新アイテム（一番下）にフォーカスを合わせる
+        focusedItemID = displayedItems.last?.id
     }
 
     /// タブを delta 分だけ循環切替（nil = "すべて" を先頭に含む）
@@ -58,6 +128,32 @@ final class ClipboardViewModel: ObservableObject {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8, blendDuration: 0.1)) {
             selectedSource = sources[newIndex]
         }
+        repairFocusIfNeeded()
+    }
+    
+    func moveFocus(_ direction: MoveCommandDirection) {
+        guard inputMode == .navigation else { return }
+
+        // フィードにいてフォーカスが無い場合は、まず適切なアイテムにフォーカスを復元する
+        if focusedItemID == nil {
+            repairFocusIfNeeded()
+        }
+
+        guard let current = focusedItemID,
+              let index = displayedItems.firstIndex(where: { $0.id == current }) else { return }
+
+        let newIndex: Int
+
+        switch direction {
+        case .down:
+            newIndex = min(index + 1, displayedItems.count - 1)
+        case .up:
+            newIndex = max(index - 1, 0)
+        default:
+            return
+        }
+
+        focusedItemID = displayedItems[newIndex].id
     }
     
     /// 1アイテムあたりの保存サイズ上限（2MB）。HTML/テキスト/画像はこの関数で一元チェック。
@@ -454,6 +550,88 @@ final class ClipboardViewModel: ObservableObject {
         case .html, .file:
             break
         }
+    }
+
+    func copyFocusedItem() {
+        guard let id = focusedItemID,
+              let item = items.first(where: { $0.id == id }) else { return }
+        reCopyItem(item)
+    }
+
+    /// 検索状態をクリアしてナビゲーションモードに戻す（Esc や「Esc 戻る」から使用）
+    func clearSearchAndReturnToNavigation() {
+        searchText = ""
+        inputMode = .navigation
+        isSearchFocused = false
+        focusArea = .feed
+        repairFocusIfNeeded()
+    }
+
+    /// 外部から「フィード側にフォーカスを戻したい」ときに呼ぶラッパー
+    func ensureFeedFocus() {
+        // 検索フィールドから確実にフォーカスを外し、フィード用のフォーカスを復活させる
+        isSearchFocused = false
+        focusArea = .feed
+        repairFocusIfNeeded()
+    }
+
+    /// ポップオーバーを閉じる直前に呼ぶ。次回開いたときの復元判定用に現在の状態を保存する
+    func savePopoverCloseState() {
+        lastFilteredCountWhenClosed = filteredItems.count
+        lastLatestItemIDWhenClosed = displayedItems.last?.id
+        if focusArea == .feed, !isSearchFocused {
+            lastFocusedItemIDWhenClosed = focusedItemID
+        } else {
+            lastFocusedItemIDWhenClosed = nil
+        }
+    }
+
+    /// ポップオーバーを表示する直前に AppDelegate から呼ぶ。表示前に true にすることで検索フィールドがフォーカスを奪っても focusedItemID を消さない
+    func beginRestoringFocusOnPopoverOpen() {
+        isRestoringFocusOnPopoverOpen = true
+    }
+
+    /// フォーカス復元処理が終わったら View の遅延ブロックから呼ぶ
+    func endRestoringFocusOnPopoverOpen() {
+        isRestoringFocusOnPopoverOpen = false
+    }
+
+    /// ポップオーバーを開いたときに呼ぶ。フォーカスを「前回の位置に復元」または「最新にリセット」する。
+    /// - Returns: 最新アイテムにフォーカスした場合は true（スクロールを最新へ）。復元した場合は false（スクロールをフォーカス中へ）。
+    func restoreOrResetFocusOnPopoverOpen() -> Bool {
+        focusArea = .feed
+        isSearchFocused = false
+
+        guard !displayedItems.isEmpty else {
+            focusedItemID = nil
+            return true
+        }
+
+        let currentCount = filteredItems.count
+        let currentLatestID = displayedItems.last?.id
+
+        // 初回起動 or 閉じている間に新規コピーが追加された → 最新にフォーカス
+        if lastFilteredCountWhenClosed == nil {
+            focusedItemID = currentLatestID
+            lastFilteredCountWhenClosed = currentCount
+            lastLatestItemIDWhenClosed = currentLatestID
+            return true
+        }
+        if currentCount != lastFilteredCountWhenClosed! || currentLatestID != lastLatestItemIDWhenClosed! {
+            focusedItemID = currentLatestID
+            lastFilteredCountWhenClosed = currentCount
+            lastLatestItemIDWhenClosed = currentLatestID
+            return true
+        }
+
+        // 前回のフォーカス位置を復元（表示中に残っていれば）
+        if let saved = lastFocusedItemIDWhenClosed,
+           displayedItems.contains(where: { $0.id == saved }) {
+            focusedItemID = saved
+            return false
+        }
+        focusedItemID = currentLatestID
+        return true
     }
 
     /// 画像アイテムを「名前をつけて保存」— 本体の imageData（サムネイルではない）を NSSavePanel で保存

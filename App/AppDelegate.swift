@@ -163,6 +163,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return nil
             }
 
+            // Tab: 検索窓とフィードのフォーカスを切り替え
+            if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 48 { // kVK_Tab
+                if let vm = self.clipboardViewModel {
+                    if vm.focusArea == .search || vm.isSearchFocused {
+                        // 検索 → フィード
+                        vm.focusArea = .feed
+                        vm.ensureFeedFocus()
+                    } else {
+                        // フィード → 検索
+                        vm.focusArea = .search
+                    }
+                }
+                return nil
+            }
+
+            // Enter: フィード側にフォーカスがあるときだけフォーカス中アイテムをコピー（検索0件時のクリアはEscに委譲）
+            if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 36 { // kVK_Return
+                if let vm = self.clipboardViewModel {
+                    if vm.focusArea == .feed, !vm.isSearchFocused {
+                        vm.copyFocusedItem()
+                        return nil
+                    }
+                }
+            }
+
+            // Esc: 検索中なら検索状態をクリアしてナビに戻る（日本語変換確定とEnterの競合を避ける）
+            if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 53 { // kVK_Escape
+                if let vm = self.clipboardViewModel, !vm.searchText.isEmpty {
+                    vm.clearSearchAndReturnToNavigation()
+                    return nil
+                }
+            }
+
+            // ↑ / ↓ : navigation モード時のみフォーカス移動
+            if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift),
+               let vm = self.clipboardViewModel,
+               vm.inputMode == .navigation,
+               vm.focusArea == .feed {
+                if event.keyCode == 126 { // 上矢印
+                    vm.moveFocus(.up)
+                    return nil
+                }
+                if event.keyCode == 125 { // 下矢印
+                    vm.moveFocus(.down)
+                    return nil
+                }
+            }
+
             return event
         }
     }
@@ -288,9 +336,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
         } else {
             applyPopoverAppearance()
+            clipboardViewModel?.beginRestoringFocusOnPopoverOpen()
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             print("[Popover] shown — isActive:\(NSApp.isActive)")
+            // ポップオーバー表示後、検索フィールドから first responder を外して矢印キーを効かせる（SwiftUI のフォーカスが遅れて付くため複数回・遅めに実行）
+            resignSearchFieldFromPopoverWindow(after: 0.08)
+            resignSearchFieldFromPopoverWindow(after: 0.18)
+            resignSearchFieldFromPopoverWindow(after: 0.35)
+        }
+    }
+
+    /// ポップオーバー内容ウィンドウの first responder を外す（検索にフォーカスが残ると矢印キーが効かない）
+    private func resignSearchFieldFromPopoverWindow(after delay: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, let popover = self.popover, popover.isShown,
+                  let contentView = popover.contentViewController?.view else { return }
+            let window = contentView.window
+            window?.makeFirstResponder(nil)
+            // nil だけだとシステムが再び検索にフォーカスを戻すことがあるため、コンテンツビューを first responder にする
+            window?.makeFirstResponder(contentView)
         }
     }
 
