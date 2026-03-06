@@ -11,11 +11,8 @@ struct MenuBarView: View {
             // ヘッダー
             headerView
 
-            // コンテンツエリア（今後実装）
+            // コンテンツエリア
             contentView
-
-            // フッター（今後実装）
-            footerView
         }
         .id(languageObserver.currentLanguage + "-\(languageObserver.languageChangeSeed)")
         .frame(width: 400, height: 600)
@@ -35,6 +32,12 @@ struct MenuBarView: View {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.plain)
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.plain)
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
@@ -43,18 +46,6 @@ struct MenuBarView: View {
     private var contentView: some View {
         MainPopoverView()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    private var footerView: some View {
-        HStack {
-            Spacer()
-            Button(L("close", fallback: "Close")) {
-                NSApplication.shared.terminate(nil)
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
     }
 }
 
