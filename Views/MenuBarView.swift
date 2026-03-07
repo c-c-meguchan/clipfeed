@@ -8,12 +8,14 @@ private final class SearchNSTextField: NSTextField {
     var onResignFirstResponder: (() -> Void)?
 
     override func becomeFirstResponder() -> Bool {
-        onBecomeFirstResponder?()
+        let block = onBecomeFirstResponder
+        DispatchQueue.main.async { block?() }
         return super.becomeFirstResponder()
     }
 
     override func resignFirstResponder() -> Bool {
-        onResignFirstResponder?()
+        let block = onResignFirstResponder
+        DispatchQueue.main.async { block?() }
         return super.resignFirstResponder()
     }
 
