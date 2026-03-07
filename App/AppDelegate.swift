@@ -48,7 +48,7 @@ private func carbonHotKeyHandler(
 
 // ---
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var clipboardViewModel: ClipboardViewModel?
@@ -80,6 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = nil
 
         popover = NSPopover()
+        popover?.delegate = self
         popover?.contentSize = NSSize(width: 400, height: 600)
         popover?.behavior = .transient
         popover?.contentViewController = NSHostingController(
@@ -353,27 +354,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
         } else {
             applyPopoverAppearance()
+            // 表示前の初回フレームで検索がフォーカスを奪わないよう、先にフィード側に正規化する
+            clipboardViewModel?.resetFocusToFeedForPopoverOpen()
             clipboardViewModel?.beginRestoringFocusOnPopoverOpen()
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             LogCapture.record("[Popover] shown — isActive:\(NSApp.isActive)")
-            // ポップオーバー表示後、検索フィールドから first responder を外して矢印キーを効かせる（SwiftUI のフォーカスが遅れて付くため複数回・遅めに実行）
-            resignSearchFieldFromPopoverWindow(after: 0.08)
-            resignSearchFieldFromPopoverWindow(after: 0.18)
-            resignSearchFieldFromPopoverWindow(after: 0.35)
+            // 初回だけ必ずカード側にフォーカスを移す（開いた直後に AppKit が検索にフォーカスしても上書きする）
+            resignSearchFieldFromPopoverWindow(after: 0.08, forceResignEvenIfSearchFocused: true)
+            // 2回目以降はユーザーが検索をクリックしていたら奪わない
+            resignSearchFieldFromPopoverWindow(after: 0.18, forceResignEvenIfSearchFocused: false)
+            resignSearchFieldFromPopoverWindow(after: 0.35, forceResignEvenIfSearchFocused: false)
         }
     }
 
     /// ポップオーバー内容ウィンドウの first responder を外す（検索にフォーカスが残ると矢印キーが効かない）
-    private func resignSearchFieldFromPopoverWindow(after delay: TimeInterval) {
+    /// - Parameters:
+    ///   - forceResignEvenIfSearchFocused: true のときはユーザーが検索にフォーカスしていても必ず contentView に移す（開直後のデフォルトをカードにするため）。false のときは検索フォーカス中は奪わない。
+    private func resignSearchFieldFromPopoverWindow(after delay: TimeInterval, forceResignEvenIfSearchFocused: Bool = false) {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self, let popover = self.popover, popover.isShown,
                   let contentView = popover.contentViewController?.view else { return }
+            if !forceResignEvenIfSearchFocused, self.clipboardViewModel?.isSearchFieldActuallyFirstResponder == true { return }
             let window = contentView.window
             window?.makeFirstResponder(nil)
-            // nil だけだとシステムが再び検索にフォーカスを戻すことがあるため、コンテンツビューを first responder にする
             window?.makeFirstResponder(contentView)
+            self.clipboardViewModel?.ensureFeedFocus()
         }
+    }
+
+    // MARK: - NSPopoverDelegate
+
+    /// ポップオーバーが閉じた直後に呼ばれる。onDisappear は NSPopover では呼ばれないことがあるため、ここで必ず状態保存・フォーカス正規化を行う
+    func popoverDidClose(_ notification: Notification) {
+        clipboardViewModel?.savePopoverCloseState()
     }
 
     // MARK: - Icon Flash

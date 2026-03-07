@@ -584,7 +584,9 @@ final class ClipboardViewModel: ObservableObject {
         repairFocusIfNeeded()
     }
 
-    /// ポップオーバーを閉じる直前に呼ぶ。次回開いたときの復元判定用に現在の状態を保存する
+    /// ポップオーバーを閉じる直前に呼ぶ。次回開いたときの復元判定用に現在の状態を保存する。
+    /// 閉じた時点で「必ずフィード側フォーカス」に正規化するため、focusArea / isSearchFocused / isSearchFieldActuallyFirstResponder もリセットする。
+    /// （検索フォーカスを保持したまま閉じると、再表示時に first responder と見た目がずれ、入力も効かずカードにもフォーカスが当たらない状態になるため）
     func savePopoverCloseState() {
         lastFilteredCountWhenClosed = filteredItems.count
         lastLatestItemIDWhenClosed = displayedItems.first?.id
@@ -593,11 +595,22 @@ final class ClipboardViewModel: ObservableObject {
         } else {
             lastFocusedItemIDWhenClosed = nil
         }
+        // 次回開いたときに必ずカード側にフォーカスするよう、閉じる時点で検索フォーカス状態を捨てる
+        focusArea = .feed
+        isSearchFocused = false
+        isSearchFieldActuallyFirstResponder = false
     }
 
     /// ポップオーバーを表示する直前に AppDelegate から呼ぶ。表示前に true にすることで検索フィールドがフォーカスを奪っても focusedItemID を消さない
     func beginRestoringFocusOnPopoverOpen() {
         isRestoringFocusOnPopoverOpen = true
+    }
+
+    /// ポップオーバーを開く直前に AppDelegate から呼ぶ。初回フレームで検索がフォーカスを奪わないよう、先にフィード側に正規化する
+    func resetFocusToFeedForPopoverOpen() {
+        focusArea = .feed
+        isSearchFocused = false
+        isSearchFieldActuallyFirstResponder = false
     }
 
     /// フォーカス復元処理が終わったら View の遅延ブロックから呼ぶ
@@ -621,11 +634,15 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     /// 検索フィールドの first responder 状態を AppKit から報告する。true の間は repairFocusIfNeeded でカードにフォーカスを付けない
+    /// true にしたときは常に focusArea / focusedItemID を検索側に揃え、ローカルモニターが Enter を握りつぶさないようにする（変換確定のため）
     func setSearchFieldActuallyFirstResponder(_ value: Bool) {
         guard isSearchFieldActuallyFirstResponder != value else { return }
         isSearchFieldActuallyFirstResponder = value
         if value {
-            syncSearchFocusStateIfNeeded()
+            // isRestoringFocusOnPopoverOpen の有無にかかわらず、検索が first responder なら状態を必ず揃える
+            focusArea = .search
+            isSearchFocused = true
+            focusedItemID = nil
         }
     }
 

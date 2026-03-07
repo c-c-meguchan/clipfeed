@@ -69,15 +69,18 @@ private struct SearchFieldRepresentable: NSViewRepresentable {
             nsView.window?.makeFirstResponder(nil)
         }
         // 検索フィールドが実際に first responder かどうかを毎回報告し、カードのフォーカス表示のずれを防ぐ
+        // 注意: updateNSView は view 更新中に呼ばれるため、ViewModel への publish は次のランループにずらす
         let isSearchFirstResponder: Bool = {
             guard let window = nsView.window, let resp = window.firstResponder else { return false }
             if resp === nsView { return true }
             if let editor = nsView.currentEditor(), resp === editor { return true }
             return false
         }()
-        onFirstResponderChange(isSearchFirstResponder)
-        if isSearchFirstResponder {
-            onSyncSearchFocusStateIfNeeded()
+        DispatchQueue.main.async {
+            onFirstResponderChange(isSearchFirstResponder)
+            if isSearchFirstResponder {
+                onSyncSearchFocusStateIfNeeded()
+            }
         }
     }
 
@@ -123,6 +126,15 @@ struct MenuBarView: View {
             headerView
             contentView
         }
+        .overlay(alignment: .bottomLeading) {
+            if Bundle.main.launchSourceVisibleInUI {
+                Text(Bundle.main.launchSourceInfo.description)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(8)
+                    .allowsHitTesting(false)
+            }
+        }
         .id(languageObserver.currentLanguage + "-\(languageObserver.languageChangeSeed)")
         .frame(width: 400, height: 600)
         .onChange(of: maxItems) { _ in
@@ -144,7 +156,7 @@ struct MenuBarView: View {
                     accentNSColor: AppSettings.accentNSColor(for: accentColorId),
                     onTextChange: { clipboardViewModel.updateSearchText($0) },
                     onBecomeFirstResponder: {
-                        if clipboardViewModel.isRestoringFocusOnPopoverOpen { return }
+                        // マウスクリックで検索にフォーカスした場合も必ず状態を更新し、カードフォーカスを外して変換確定を効かせる（isRestoringFocusOnPopoverOpen でスキップしない）
                         clipboardViewModel.setSearchFieldActuallyFirstResponder(true)
                     },
                     onResignFirstResponder: { clipboardViewModel.setSearchFieldActuallyFirstResponder(false) },
