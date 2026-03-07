@@ -135,10 +135,15 @@ struct MainPopoverView: View {
                     .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                         scrollOffset = value
                         DispatchQueue.main.async { updateShortcutOrder(scrollOffset: value) }
+                        refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset: value)
                     }
                     .onPreferenceChange(ItemFramesPreferenceKey.self) { value in
-                        itemFrames = value
-                        DispatchQueue.main.async { updateShortcutOrder(itemFrames: value) }
+                        // 1フレーム内で複数回更新されるとクラッシュするため、次のランループで1回だけ反映する
+                        DispatchQueue.main.async {
+                            itemFrames = value
+                            updateShortcutOrder(itemFrames: value)
+                            refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset: scrollOffset, itemFrames: value)
+                        }
                     }
                     .onDisappear {
                         DispatchQueue.main.async { clipboardViewModel.savePopoverCloseState() }
@@ -267,6 +272,32 @@ struct MainPopoverView: View {
     private func scrollToLatest(_ proxy: ScrollViewProxy) {
         guard let id = clipboardViewModel.displayedItems.first?.id else { return }
         proxy.scrollTo(id, anchor: .top)
+    }
+
+    /// フォーカス中アイテムが表示外（または表示端で消えそう）になったら、表示内のアイテムにフォーカスを移す
+    private func refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset value: CGFloat, itemFrames frames: [UUID: CGRect]? = nil) {
+        guard clipboardViewModel.focusArea == .feed else { return }
+        guard let currentID = clipboardViewModel.focusedItemID else { return }
+        let framesToUse = frames ?? itemFrames
+        let visibleTop: CGFloat = -value
+        let visibleBottom: CGFloat = -value + scrollVisibleHeight
+        guard let focusedFrame = framesToUse[currentID] else { return }
+        // ある程度表示内に残っていればそのまま
+        let margin: CGFloat = 20
+        if focusedFrame.minY >= visibleTop - margin && focusedFrame.maxY <= visibleBottom + margin {
+            return
+        }
+        // 表示内の .normal アイテムのうち、上から一番目にフォーカスを移す
+        let visibleItem = clipboardViewModel.displayedItems
+            .filter { item in
+                guard item.kind == .normal, let f = framesToUse[item.id] else { return false }
+                return f.maxY > visibleTop && f.minY < visibleBottom
+            }
+            .sorted { (a, b) in (framesToUse[a.id]?.minY ?? 0) < (framesToUse[b.id]?.minY ?? 0) }
+            .first
+        if let item = visibleItem {
+            clipboardViewModel.focusedItemID = item.id
+        }
     }
 
     /// 表示内のアイテムのうち kind == .normal を上から順に最大9件の ID を shortcutOrderedIDs にセットする。index 0 = ⌘1 = 一番上。
