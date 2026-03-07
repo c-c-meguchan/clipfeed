@@ -31,6 +31,27 @@ private struct ItemFramesPreferenceKey: PreferenceKey {
     }
 }
 
+/// 1フレーム内で複数回呼ばれる ItemFramesPreferenceKey を1回にまとめる（「multiple times per frame」警告・クラッシュ防止）
+private final class ItemFramesCoalescer {
+    private var pendingFrames: [UUID: CGRect]?
+    private var pendingScrollOffset: CGFloat = 0
+    private var workItem: DispatchWorkItem?
+
+    func schedule(frames: [UUID: CGRect], scrollOffset: CGFloat, apply: @escaping ([UUID: CGRect], CGFloat) -> Void) {
+        pendingFrames = frames
+        pendingScrollOffset = scrollOffset
+        workItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, let frames = self.pendingFrames else { return }
+            self.pendingFrames = nil
+            let offset = self.pendingScrollOffset
+            apply(frames, offset)
+        }
+        workItem = work
+        DispatchQueue.main.async(execute: work)
+    }
+}
+
 /// スクロール領域の表示高さ
 private struct ScrollVisibleHeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -48,6 +69,7 @@ struct MainPopoverView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var itemFrames: [UUID: CGRect] = [:]
     @State private var scrollVisibleHeight: CGFloat = 400
+    @State private var itemFramesCoalescer = ItemFramesCoalescer()
 
     /// items から sourceAppName を最新出現順で重複除去し、アイコンデータ付きで生成
     private var sourceTabs: [SourceTab] {
@@ -133,16 +155,17 @@ struct MainPopoverView: View {
                     }
                     .coordinateSpace(name: "clipboardScroll")
                     .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                        scrollOffset = value
-                        DispatchQueue.main.async { updateShortcutOrder(scrollOffset: value) }
-                        refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset: value)
+                        DispatchQueue.main.async {
+                            scrollOffset = value
+                            updateShortcutOrder(scrollOffset: value)
+                            refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset: value)
+                        }
                     }
                     .onPreferenceChange(ItemFramesPreferenceKey.self) { value in
-                        // 1フレーム内で複数回更新されるとクラッシュするため、次のランループで1回だけ反映する
-                        DispatchQueue.main.async {
-                            itemFrames = value
-                            updateShortcutOrder(itemFrames: value)
-                            refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset: scrollOffset, itemFrames: value)
+                        itemFramesCoalescer.schedule(frames: value, scrollOffset: scrollOffset) { frames, offset in
+                            itemFrames = frames
+                            updateShortcutOrder(itemFrames: frames)
+                            refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset: offset, itemFrames: frames)
                         }
                     }
                     .onDisappear {
@@ -233,11 +256,13 @@ struct MainPopoverView: View {
                 }
             }
             .onPreferenceChange(ScrollVisibleHeightPreferenceKey.self) { value in
-                if value > 0 {
-                    scrollVisibleHeight = value
-                    DispatchQueue.main.async { updateShortcutOrder(scrollVisibleHeight: value) }
-                } else {
-                    DispatchQueue.main.async { updateShortcutOrder() }
+                DispatchQueue.main.async {
+                    if value > 0 {
+                        scrollVisibleHeight = value
+                        updateShortcutOrder(scrollVisibleHeight: value)
+                    } else {
+                        updateShortcutOrder()
+                    }
                 }
             }
         }
