@@ -48,7 +48,8 @@ class OCRManager {
             }
 
             request.recognitionLevel = .accurate
-            request.recognitionLanguages = ["ja-JP", "en-US"]
+            // 言語補正まわりの API は ISO 639 の2文字を期待するため、locale 形式 (ja-JP) ではなく "ja", "en" を指定
+            request.recognitionLanguages = ["ja", "en"]
             request.usesLanguageCorrection = true
             request.minimumTextHeight = 0.01
 

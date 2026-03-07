@@ -12,6 +12,10 @@
 "app_language_ja" = "日本語";
 "app_language_en" = "英語";
 "about_app_version" = "アプリバージョン";
+"launch_source_label" = "実行元";
+"launch_source_xcode" = "Xcodeビルド（開発）";
+"launch_source_apps" = "アプリケーションフォルダ";
+"launch_source_other" = "その他";
 "support_developer" = "開発者を支援";
 "clear_history_title" = "履歴を全削除";
 "delete" = "削除";

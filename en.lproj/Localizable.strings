@@ -12,6 +12,10 @@
 "app_language_ja" = "Japanese";
 "app_language_en" = "English";
 "about_app_version" = "App Version";
+"launch_source_label" = "Launch source";
+"launch_source_xcode" = "Xcode build (development)";
+"launch_source_apps" = "Applications folder";
+"launch_source_other" = "Other";
 "support_developer" = "Support Developer";
 "clear_history_title" = "Clear all history";
 "delete" = "Delete";

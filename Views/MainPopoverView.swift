@@ -134,44 +134,45 @@ struct MainPopoverView: View {
                     .coordinateSpace(name: "clipboardScroll")
                     .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                         scrollOffset = value
-                        updateShortcutOrder(scrollOffset: value)
+                        DispatchQueue.main.async { updateShortcutOrder(scrollOffset: value) }
                     }
                     .onPreferenceChange(ItemFramesPreferenceKey.self) { value in
                         itemFrames = value
-                        updateShortcutOrder(itemFrames: value)
+                        DispatchQueue.main.async { updateShortcutOrder(itemFrames: value) }
                     }
                     .onDisappear {
-                        clipboardViewModel.savePopoverCloseState()
+                        DispatchQueue.main.async { clipboardViewModel.savePopoverCloseState() }
                     }
                     // ポップオーバーを開いたとき → 前回のフォーカスを復元 or 最新にリセットし、検索にはフォーカスしない
                     .onAppear {
-                        updateShortcutOrder()
-                        let focusLatest = clipboardViewModel.restoreOrResetFocusOnPopoverOpen()
-                        if let fid = clipboardViewModel.focusedItemID, let idx = indexByID[fid] {
-                            lastFocusedIndex = idx
-                        } else {
-                            lastFocusedIndex = nil
-                        }
-                        DispatchQueue.main.async { clipboardViewModel.setSearchResign() }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
-                            clipboardViewModel.setSearchResign()
-                            if focusLatest {
-                                clipboardViewModel.ensureFeedFocus()
-                                scrollToLatest(proxy)
+                        DispatchQueue.main.async { updateShortcutOrder() }
+                        DispatchQueue.main.async {
+                            let focusLatest = clipboardViewModel.restoreOrResetFocusOnPopoverOpen()
+                            if let fid = clipboardViewModel.focusedItemID, let idx = indexByID[fid] {
+                                lastFocusedIndex = idx
                             } else {
-                                clipboardViewModel.ensureFeedFocus()
-                                if let id = clipboardViewModel.focusedItemID {
-                                    proxy.scrollTo(id, anchor: .center)
-                                }
+                                lastFocusedIndex = nil
                             }
-                            clipboardViewModel.endRestoringFocusOnPopoverOpen()
-                            // 検索フィールドが first responder のまま残っていると矢印キーが効かないため、ウィンドウから明示的に外す
-                            NSApp.keyWindow?.makeFirstResponder(nil)
+                            clipboardViewModel.setSearchResign()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+                                clipboardViewModel.setSearchResign()
+                                if focusLatest {
+                                    clipboardViewModel.ensureFeedFocus()
+                                    scrollToLatest(proxy)
+                                } else {
+                                    clipboardViewModel.ensureFeedFocus()
+                                    if let id = clipboardViewModel.focusedItemID {
+                                        proxy.scrollTo(id, anchor: .center)
+                                    }
+                                }
+                                clipboardViewModel.endRestoringFocusOnPopoverOpen()
+                                NSApp.keyWindow?.makeFirstResponder(nil)
+                            }
                         }
                     }
                     // 新規アイテム追加時
                     .onChange(of: clipboardViewModel.filteredItems.count) { _ in
-                        updateShortcutOrder()
+                        DispatchQueue.main.async { updateShortcutOrder() }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                             withAnimation(.easeOut(duration: 0.2)) {
                                 scrollToLatest(proxy)
@@ -180,14 +181,14 @@ struct MainPopoverView: View {
                     }
                     // タブ切替時
                     .onChange(of: clipboardViewModel.selectedSource) { _ in
-                        updateShortcutOrder()
+                        DispatchQueue.main.async { updateShortcutOrder() }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                             scrollToLatest(proxy)
                         }
                     }
                     // 検索テキスト変更時もショートカット割り当てを再計算
                     .onChange(of: clipboardViewModel.searchText) { _ in
-                        updateShortcutOrder()
+                        DispatchQueue.main.async { updateShortcutOrder() }
                     }
                     // フォーカス移動時: フォーカス中アイテムが表示外に出る場合のみスクロール（中腹では端に固定されず現在地を維持）
                     .onChange(of: clipboardViewModel.focusedItemID) { id in
@@ -223,15 +224,15 @@ struct MainPopoverView: View {
             }
             .onChange(of: clipboardViewModel.focusArea) { area in
                 if area == .feed {
-                    clipboardViewModel.ensureFeedFocus()
+                    DispatchQueue.main.async { clipboardViewModel.ensureFeedFocus() }
                 }
             }
             .onPreferenceChange(ScrollVisibleHeightPreferenceKey.self) { value in
                 if value > 0 {
                     scrollVisibleHeight = value
-                    updateShortcutOrder(scrollVisibleHeight: value)
+                    DispatchQueue.main.async { updateShortcutOrder(scrollVisibleHeight: value) }
                 } else {
-                    updateShortcutOrder()
+                    DispatchQueue.main.async { updateShortcutOrder() }
                 }
             }
         }

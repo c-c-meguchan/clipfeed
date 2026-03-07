@@ -317,6 +317,11 @@ struct SettingsView: View {
             "macOS: \(osStr)",
             "App language (effective): \(lang)",
             "",
+            "Launch source",
+            "-------------",
+            "\(Bundle.main.launchSourceInfo.description)",
+            "Bundle path: \(Bundle.main.launchSourceInfo.path)",
+            "",
             "Settings",
             "--------",
             "App language (setting): \(AppSettings.appLanguage)",
@@ -371,6 +376,20 @@ struct SettingsView: View {
                     Spacer()
                     Text(Bundle.main.appVersion)
                         .foregroundStyle(.secondary)
+                }
+                let source = Bundle.main.launchSourceInfo
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(L("launch_source_label", fallback: "Launch source"))
+                        Spacer()
+                        Text(source.description)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(source.path)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
                 }
                 Button(L("check_update", fallback: "Check for Updates")) {
                     UpdateChecker.shared.checkForUpdates(showNoUpdateAlert: true, presentingWindow: SettingsWindowController.shared.window)
