@@ -164,7 +164,8 @@ struct SettingsView: View {
         case "orange": return "Orange"
         case "green": return "Green"
         case "teal": return "Teal"
-        default: return "Blue"
+        case "pink": return "Pink"
+        default: return "Green"
         }
     }
 

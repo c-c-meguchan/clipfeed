@@ -31,6 +31,7 @@
 "accent_orange" = "オレンジ";
 "accent_green" = "グリーン";
 "accent_teal" = "ティール";
+"accent_pink" = "ピンク";
 "max_items_label" = "最大保存件数";
 "items_count_format" = "%d件";
 "launch_at_login" = "起動時に自動起動";

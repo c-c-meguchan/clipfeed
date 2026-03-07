@@ -31,6 +31,7 @@
 "accent_orange" = "Orange";
 "accent_green" = "Green";
 "accent_teal" = "Teal";
+"accent_pink" = "Pink";
 "max_items_label" = "Max items to save";
 "items_count_format" = "%d items";
 "launch_at_login" = "Launch at startup";

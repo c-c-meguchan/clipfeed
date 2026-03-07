@@ -119,7 +119,7 @@ struct MenuBarView: View {
     @EnvironmentObject var languageObserver: AppLanguageObserver
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("maxItems") private var maxItems: Int = 50
-    @AppStorage(AppSettings.accentColorKey) private var accentColorId: String = "blue"
+    @AppStorage(AppSettings.accentColorKey) private var accentColorId: String = "green"
 
     var body: some View {
         VStack(spacing: 0) {

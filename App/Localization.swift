@@ -19,7 +19,7 @@ private let embeddedJA: [String: String] = [
     "about_app_version": "アプリバージョン", "support_developer": "開発者を支援", "clear_history_title": "履歴を全削除", "delete": "削除", "cancel": "キャンセル",
     "clear_history_message": "クリップボード履歴をすべて削除します。この操作は取り消せません。", "color_mode": "カラーモード", "color_mode_system": "端末の設定",
     "color_mode_light": "ライト", "color_mode_dark": "ダーク", "max_items_label": "最大保存件数", "items_count_format": "%d件",
-    "accent_color": "アクセントカラー", "accent_blue": "ブルー", "accent_purple": "パープル", "accent_orange": "オレンジ", "accent_green": "グリーン", "accent_teal": "ティール",
+    "accent_color": "アクセントカラー", "accent_blue": "ブルー", "accent_purple": "パープル", "accent_pink": "ピンク", "accent_orange": "オレンジ", "accent_green": "グリーン", "accent_teal": "ティール",
     "launch_at_login": "起動時に自動起動", "clear_history_button": "履歴を全削除", "buy_me_coffee": "コーヒーを送る", "loading": "読み込み中…",
     "filter_all": "すべて", "source_other_devices": "他のデバイス", "source_screenshot": "スクリーンショット", "image": "画像", "text": "テキスト",
     "support_developer_message": "このアプリは、自分用に作ったお気に入りツールがどこかの誰かの役にも立ったらハッピー！という思いで運営しています。継続のために応援してくれると嬉しいです！",
