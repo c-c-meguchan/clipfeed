@@ -47,6 +47,8 @@
 "toast_saved" = "Saved";
 "toast_save_failed" = "Save failed";
 "toast_copied" = "Copied to clipboard";
+"no_history_found" = "No history found";
+"back_esc" = "Back esc";
 "update_check_title" = "Update";
 "update_check_fetch_error" = "Failed to fetch version info.";
 "update_available" = "Update available";

@@ -119,10 +119,10 @@ struct MainPopoverView: View {
 
                             if clipboardViewModel.displayedItems.isEmpty {
                                 VStack(spacing: 12) {
-                                    Text("履歴が見つかりません")
+                                    Text(L("no_history_found", fallback: "No history found"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.secondary)
-                                    Button("戻る esc") {
+                                    Button(L("back_esc", fallback: "Back esc")) {
                                         clipboardViewModel.clearSearchAndReturnToNavigation()
                                         clipboardViewModel.setSearchResign()
                                     }

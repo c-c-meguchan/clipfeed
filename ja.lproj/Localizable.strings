@@ -47,6 +47,8 @@
 "toast_saved" = "保存しました";
 "toast_save_failed" = "保存に失敗しました";
 "toast_copied" = "クリップボードにコピーしました";
+"no_history_found" = "履歴が見つかりません";
+"back_esc" = "戻る esc";
 "update_check_title" = "アップデート確認";
 "update_check_fetch_error" = "バージョン情報の取得に失敗しました。";
 "update_available" = "アップデートがあります";

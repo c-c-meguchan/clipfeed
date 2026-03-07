@@ -47,6 +47,8 @@ private let embeddedJA: [String: String] = [
     "export_log": "ログを出力",
     "log_export_success": "ログを出力しました。",
     "log_export_failed": "ログの保存に失敗しました。",
+    "no_history_found": "履歴が見つかりません",
+    "back_esc": "戻る esc",
 ]
 
 private enum StringsCache {
