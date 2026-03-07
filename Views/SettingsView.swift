@@ -222,7 +222,7 @@ struct SettingsView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(FlatPrimaryButtonStyle(accentColor: appAccentColor))
             }
         }
         .formStyle(.grouped)
@@ -246,7 +246,7 @@ struct SettingsView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(FlatPrimaryButtonStyle(accentColor: appAccentColor))
 
                 Button {
                     Self.exportLogToFile(presentingWindow: NSApp.keyWindow)
@@ -257,7 +257,7 @@ struct SettingsView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FlatSecondaryButtonStyle())
             }
         }
         .formStyle(.grouped)
@@ -395,11 +395,38 @@ struct SettingsView: View {
                 Button(L("check_update", fallback: "Check for Updates")) {
                     UpdateChecker.shared.checkForUpdates(showNoUpdateAlert: true, presentingWindow: SettingsWindowController.shared.window)
                 }
+                .buttonStyle(FlatSecondaryButtonStyle())
             }
         }
         .formStyle(.grouped)
     }
 
+}
+
+/// 設定画面用：アクセント色のフラットなボタン（影・ベベルなし）
+private struct FlatPrimaryButtonStyle: ButtonStyle {
+    var accentColor: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.white)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(accentColor.opacity(configuration.isPressed ? 0.85 : 1.0))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+}
+
+/// 設定画面用：薄い背景のフラットなボタン（影・ベベルなし）
+private struct FlatSecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.primary)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(Color.primary.opacity(configuration.isPressed ? 0.12 : 0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
 }
 
 /// 起動時ログイン（Login Item）の有効/無効。macOS 13+ の SMAppService を使用。
