@@ -28,6 +28,7 @@
 		AA000037 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000038 /* UpdateChecker.swift */; };
 		AA000053 /* LogCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000052 /* LogCapture.swift */; };
 		AA00003D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00003C /* Assets.xcassets */; };
+		AA00003E /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AA00003B /* Localizable.strings */; };
 		AA000050 /* AccentTintView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000051 /* AccentTintView.swift */; };
 /* End PBXBuildFile section */
 
@@ -110,7 +111,7 @@
 				AA000042 /* Update */,
 				AA000043 /* OCR */,
 			);
-			path = Core;
+			name = Core;
 			sourceTree = "<group>";
 		};
 		AA000041 /* Localization */ = {
@@ -118,7 +119,7 @@
 			children = (
 				9E9C06902F571B23007CB805 /* Localization.swift */,
 			);
-			path = Localization;
+			name = Localization;
 			sourceTree = "<group>";
 		};
 		AA000042 /* Update */ = {
@@ -127,7 +128,7 @@
 				AA000038 /* UpdateChecker.swift */,
 				AA000036 /* VersionInfo.swift */,
 			);
-			path = Update;
+			name = Update;
 			sourceTree = "<group>";
 		};
 		AA000043 /* OCR */ = {
@@ -135,7 +136,7 @@
 			children = (
 				AA00000C /* OCRManager.swift */,
 			);
-			path = OCR;
+			name = OCR;
 			sourceTree = "<group>";
 		};
 		AA000044 /* Features */ = {
@@ -144,7 +145,7 @@
 				AA000045 /* Clipboard */,
 				AA00004A /* Settings */,
 			);
-			path = Features;
+			name = Features;
 			sourceTree = "<group>";
 		};
 		AA000045 /* Clipboard */ = {
@@ -155,7 +156,7 @@
 				AA000048 /* ViewModels */,
 				AA000049 /* Views */,
 			);
-			path = Clipboard;
+			name = Clipboard;
 			sourceTree = "<group>";
 		};
 		AA000046 /* Managers */ = {
@@ -164,7 +165,7 @@
 				AA00000A /* ClipboardManager.swift */,
 				AA00000E /* ClipboardMonitor.swift */,
 			);
-			path = Managers;
+			name = Managers;
 			sourceTree = "<group>";
 		};
 		AA000047 /* Models */ = {
@@ -173,7 +174,7 @@
 				AA000006 /* ClipboardItem.swift */,
 				AA000008 /* Statistics.swift */,
 			);
-			path = Models;
+			name = Models;
 			sourceTree = "<group>";
 		};
 		AA000048 /* ViewModels */ = {
@@ -182,7 +183,7 @@
 				AA000010 /* ClipboardHistoryViewModel.swift */,
 				AA000026 /* ClipboardViewModel.swift */,
 			);
-			path = ViewModels;
+			name = ViewModels;
 			sourceTree = "<group>";
 		};
 		AA000049 /* Views */ = {
@@ -193,7 +194,7 @@
 				AA000028 /* MainPopoverView.swift */,
 				AA00002A /* ClipboardCardView.swift */,
 			);
-			path = Views;
+			name = Views;
 			sourceTree = "<group>";
 		};
 		AA00004A /* Settings */ = {
@@ -204,7 +205,7 @@
 				AA000031 /* AppSettings.swift */,
 				AA000052 /* LogCapture.swift */,
 			);
-			path = Settings;
+			name = Settings;
 			sourceTree = "<group>";
 		};
 		AA00001A /* Products */ = {
@@ -275,6 +276,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA00003D /* Assets.xcassets in Resources */,
+				AA00003E /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -51,6 +51,45 @@ private let embeddedJA: [String: String] = [
     "back_esc": "戻る esc",
 ]
 
+/// 英語 .strings 読み込み失敗時用の埋め込み辞書（長時間起動やバンドルパス不安定時でも表示を保つ）
+private let embeddedEN: [String: String] = [
+    "settings": "Settings", "close": "Close", "copy": "Copy", "app_version": "Version", "check_update": "Check for Updates",
+    "app_language": "App Language", "app_language_system": "System (Default)", "app_language_ja": "Japanese", "app_language_en": "English",
+    "about_app_version": "App Version", "support_developer": "Support Developer", "clear_history_title": "Clear All History", "delete": "Delete", "cancel": "Cancel",
+    "clear_history_message": "All clipboard history will be deleted. This cannot be undone.", "color_mode": "Color Mode", "color_mode_system": "System",
+    "color_mode_light": "Light", "color_mode_dark": "Dark", "max_items_label": "Max Items", "items_count_format": "%d items",
+    "accent_color": "Accent Color", "accent_blue": "Blue", "accent_purple": "Purple", "accent_pink": "Pink", "accent_orange": "Orange", "accent_green": "Green", "accent_teal": "Teal",
+    "launch_at_login": "Launch at Login", "clear_history_button": "Clear All History", "buy_me_coffee": "Buy Me a Coffee", "loading": "Loading…",
+    "filter_all": "All", "source_other_devices": "Other devices", "source_screenshot": "Screenshot", "image": "Image", "text": "Text",
+    "support_developer_message": "This app is run with the hope that a personal tool might help someone out there. Your support helps keep it going!",
+    "oversized_placeholder_message": "⚠ Cannot re-copy (over 2MB)", "toast_no_text": "No text", "toast_saved": "Saved",
+    "toast_save_failed": "Save failed", "toast_copied": "Copied to clipboard", "update_check_title": "Check for Updates",
+    "update_check_fetch_error": "Failed to fetch version info.", "update_available": "Update available", "update_download": "Download",
+    "update_later": "Later", "update_latest": "You're on the latest version.", "alert_ok": "OK",
+    "update_check_no_releases": "Repository not found or no releases yet.",
+    "update_check_no_dmg": "Latest release has no DMG attached.",
+    "update_available_message": "Version %@ is available.", "copied_from": "Copied from",
+    "search_placeholder": "Search clipboard history",
+    "shortcuts": "Shortcuts",
+    "shortcut_toggle_popover": "Open / Close ClipFeed",
+    "shortcut_switch_tab": "Switch source tab",
+    "shortcut_recopy": "Re-copy from history",
+    "shortcut_ocr_copy": "Copy text from image (OCR)",
+    "shortcut_open_settings": "Open Settings",
+    "shortcut_section_in_popover": "In popover",
+    "shortcut_focus_search_feed": "Focus search / feed",
+    "shortcut_copy_focused": "Copy focused item",
+    "shortcut_clear_search": "Clear search",
+    "shortcut_move_focus": "Move focus up / down",
+    "contact_tab": "Contact",
+    "contact_button": "Contact",
+    "export_log": "Export log",
+    "log_export_success": "Log exported.",
+    "log_export_failed": "Failed to save log.",
+    "no_history_found": "No history found",
+    "back_esc": "Back esc",
+]
+
 private enum StringsCache {
     private static let lock = NSLock()
     private static var en: [String: String]?
@@ -63,16 +102,26 @@ private enum StringsCache {
         case "en":
             if let en = en { return en }
             let loaded = loadStrings(lang: "en")
-            en = loaded
-            return loaded
+            let resolved = loaded ?? embeddedEN
+            if loaded != nil { en = loaded }
+            return resolved
         case "ja":
             if let ja = ja { return ja }
             let loaded = loadStrings(lang: "ja")
-            ja = loaded ?? embeddedJA
-            return ja!
+            let resolved = loaded ?? embeddedJA
+            ja = loaded != nil ? loaded : embeddedJA  // 失敗時は embedded をキャッシュ
+            return resolved
         default:
             return dictionary(for: "en")
         }
+    }
+
+    /// 長時間起動やバンドルパス不安定時に呼ぶと、次回アクセスで .strings を再読み込みする
+    static func invalidateCache() {
+        lock.lock()
+        en = nil
+        ja = nil
+        lock.unlock()
     }
 
     /// バンドル内の lang.lproj/Localizable.strings を読み、[key: value] で返す。
@@ -169,6 +218,11 @@ private enum StringsCache {
 }
 
 // MARK: - Public API
+
+/// 長時間起動やメモリ圧迫後にローカライズを再読み込みしたいときに呼ぶ（次回の L() で .strings を再試行）
+func invalidateLocalizationCache() {
+    StringsCache.invalidateCache()
+}
 
 func L(_ key: String, fallback value: String) -> String {
     let lang = effectiveAppLanguage()
