@@ -220,16 +220,21 @@ struct ClipboardCardView: View {
                 .buttonStyle(ShortcutButtonStyle())
             }
             if item.type == .image && item.ocrResult == nil && !item.ocrNoText {
-                if index >= 0 && index < 9 {
+                if isFocused {
+                    Button("\(L("text", fallback: "Text")) ⌥↩") {
+                        clipboardViewModel.ocrCopy(item)
+                    }
+                    .buttonStyle(ShortcutButtonStyle(accentColor: appAccentColor))
+                } else if index >= 0 && index < 9 {
                     Button("\(L("text", fallback: "Text")) ⌘⌥\(index + 1)") {
                         clipboardViewModel.ocrCopy(item)
                     }
-                    .buttonStyle(ShortcutButtonStyle(accentColor: isFocused ? appAccentColor : nil))
+                    .buttonStyle(ShortcutButtonStyle(accentColor: nil))
                 } else {
                     Button(L("text", fallback: "Text")) {
                         clipboardViewModel.ocrCopy(item)
                     }
-                    .buttonStyle(ShortcutButtonStyle(accentColor: isFocused ? appAccentColor : nil))
+                    .buttonStyle(ShortcutButtonStyle(accentColor: nil))
                 }
             }
         }

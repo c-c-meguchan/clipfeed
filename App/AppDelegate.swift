@@ -192,6 +192,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
                 }
             }
 
+            // ⌥ + Enter: フォーカス中アイテムのOCR（画像の場合のみ）
+            if f.contains(.option) && !f.contains(.command) && !f.contains(.shift) && event.keyCode == 36 { // kVK_Return
+                if let vm = self.clipboardViewModel {
+                    if vm.focusArea == .feed, !vm.isSearchFocused {
+                        self.ocrCopyFocusedItem()
+                        return nil
+                    }
+                }
+            }
+
             // Esc: 検索中なら検索状態をクリアしてナビに戻る（日本語変換確定とEnterの競合を避ける）
             if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 53 { // kVK_Escape
                 if let vm = self.clipboardViewModel, !vm.searchText.isEmpty {
@@ -288,6 +298,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         guard let item = vm.filteredItems.first(where: { $0.id == id }) else { return }
         guard item.type == .image else { return }
         LogCapture.record("Performing OCR for index \(index)")
+        vm.ocrCopy(item)
+    }
+
+    /// フォーカス中のアイテムに対してOCRを実行（画像の場合のみ）。⌥+Enter で呼ばれる
+    func ocrCopyFocusedItem() {
+        guard let popover, popover.isShown else { return }
+        guard let vm = clipboardViewModel else { return }
+        guard let id = vm.focusedItemID else { return }
+        guard let item = vm.displayedItems.first(where: { $0.id == id }) else { return }
+        guard item.type == .image else { return }
+        LogCapture.record("Performing OCR for focused item")
         vm.ocrCopy(item)
     }
 

@@ -69,6 +69,7 @@
 "shortcut_section_in_popover" = "In popover";
 "shortcut_focus_search_feed" = "Switch focus between search and feed";
 "shortcut_copy_focused" = "Copy focused item";
+"shortcut_ocr_focused" = "OCR focused item (image)";
 "shortcut_clear_search" = "Clear search and return";
 "shortcut_move_focus" = "Move focus up / down";
 "contact_tab" = "Contact";

@@ -183,6 +183,7 @@ struct SettingsView: View {
                 shortcutRow(keys: "⌘ ,", descriptionKey: "shortcut_open_settings", fallback: "Open Settings")
                 shortcutRow(keys: "Tab", descriptionKey: "shortcut_focus_search_feed", fallback: "Switch focus between search and feed")
                 shortcutRow(keys: "↩", descriptionKey: "shortcut_copy_focused", fallback: "Copy focused item")
+                shortcutRow(keys: "⌥↩", descriptionKey: "shortcut_ocr_focused", fallback: "OCR focused item (image)")
                 shortcutRow(keys: "Esc", descriptionKey: "shortcut_clear_search", fallback: "Clear search and return")
                 shortcutRow(keys: "↑ / ↓", descriptionKey: "shortcut_move_focus", fallback: "Move focus up / down")
             }

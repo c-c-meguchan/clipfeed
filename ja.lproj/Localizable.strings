@@ -69,6 +69,7 @@
 "shortcut_section_in_popover" = "ポップオーバー内";
 "shortcut_focus_search_feed" = "検索窓とフィードのフォーカスを切り替え";
 "shortcut_copy_focused" = "フォーカス中のアイテムをコピー";
+"shortcut_ocr_focused" = "フォーカス中のアイテムのOCR（画像）";
 "shortcut_clear_search" = "検索をやめて戻る";
 "shortcut_move_focus" = "フォーカスを上 / 下に移動";
 "contact_tab" = "お問い合わせ";
