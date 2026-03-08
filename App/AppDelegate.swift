@@ -97,7 +97,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         observeAppearanceChanges()
         observeOpenSettings()
         observeClosePopoverAfterReCopy()
-        observeMemoryWarning()
 
         UpdateChecker.shared.checkForUpdates()
 
@@ -321,17 +320,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             queue: .main
         ) { [weak self] _ in
             self?.openSettings()
-        }
-    }
-
-    /// メモリ警告時にローカライズキャッシュを破棄し、次回表示時に .strings を再読み込みする（長時間起動時の表示不具合を軽減）
-    private func observeMemoryWarning() {
-        NotificationCenter.default.addObserver(
-            forName: NSApplication.didReceiveMemoryWarningNotification,
-            object: nil,
-            queue: .main
-        ) { _ in
-            invalidateLocalizationCache()
         }
     }
 
