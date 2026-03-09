@@ -301,15 +301,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         vm.ocrCopy(item)
     }
 
-    /// フォーカス中のアイテムに対してOCRを実行（画像の場合のみ）。⌥+Enter で呼ばれる
+    /// フォーカス中の画像アイテムに対して ⌥+Enter で呼ばれる。
+    /// OCR済みテキストがあればそのままコピー、なければOCRを実行する。
     func ocrCopyFocusedItem() {
         guard let popover, popover.isShown else { return }
         guard let vm = clipboardViewModel else { return }
         guard let id = vm.focusedItemID else { return }
         guard let item = vm.displayedItems.first(where: { $0.id == id }) else { return }
         guard item.type == .image else { return }
-        LogCapture.record("Performing OCR for focused item")
-        vm.ocrCopy(item)
+        if item.ocrResult != nil {
+            vm.copyFocusedItemOCRResult()
+        } else {
+            LogCapture.record("Performing OCR for focused item")
+            vm.ocrCopy(item)
+        }
     }
 
     // MARK: - Popover

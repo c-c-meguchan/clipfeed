@@ -181,7 +181,9 @@ struct ClipboardCardView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .opacity(0.5)
-            if index >= 0 && index < 9 {
+            if isFocused {
+                ocrCopyButton(label: "\(L("copy", fallback: "Copy")) ⌥↩")
+            } else if index >= 0 && index < 9 {
                 ocrCopyButton(label: "\(L("copy", fallback: "Copy")) ⌘⌥\(index + 1)")
             } else {
                 ocrCopyButton(label: L("copy", fallback: "Copy"))

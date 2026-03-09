@@ -567,6 +567,21 @@ final class ClipboardViewModel: ObservableObject {
         reCopyItem(item)
     }
 
+    /// フォーカス中アイテムの OCR 済みテキストをクリップボードにコピーする（⌘+Enter）
+    func copyFocusedItemOCRResult() {
+        guard let id = focusedItemID,
+              let item = items.first(where: { $0.id == id }),
+              let text = item.ocrResult else { return }
+        monitor.isInternalCopy = true
+        isPerformingOCR = true
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        showReCopyToast()
+        showHighlight(.ocr(item.id))
+        LogCapture.record("OCR result re-copy: \(text.prefix(80))")
+    }
+
     /// 検索状態をクリアしてナビゲーションモードに戻す（Esc や「Esc 戻る」から使用）
     func clearSearchAndReturnToNavigation() {
         searchText = ""
