@@ -8,69 +8,27 @@ enum AppSettings {
     static let launchAtLoginKey = "ClipFeed.launchAtLogin"
     static let appearanceModeKey = "ClipFeed.appearanceMode"
     static let appLanguageKey = "ClipFeed.appLanguage"
-    static let accentColorKey = "ClipFeed.accentColor"
-
     static let maxItemCountOptions = [10, 30, 50, 100]
     static let defaultMaxItemCount = 50
 
-    /// アクセントカラー識別子: "green" / "blue" / "purple" / "pink" / "orange" / "teal"。デフォルト "green"（アプリアイコンに合わせる）。
-    static var accentColorId: String {
-        get {
-            let raw = UserDefaults.standard.string(forKey: accentColorKey) ?? "green"
-            return Self.accentColorIds.contains(raw) ? raw : "green"
-        }
-        set {
-            guard Self.accentColorIds.contains(newValue) else { return }
-            UserDefaults.standard.set(newValue, forKey: accentColorKey)
-            NotificationCenter.default.post(name: Self.accentColorDidChangeNotification, object: nil)
-        }
+    // MARK: - Accent color (blue fixed)
+
+    private static let accentLight = Color(red: 0.18, green: 0.35, blue: 0.95)
+    private static let accentDark  = Color(red: 0.2,  green: 0.4,  blue: 1.0)
+
+    private static let accentNSLight = NSColor(red: 0.18, green: 0.35, blue: 0.95, alpha: 1)
+    private static let accentNSDark  = NSColor(red: 0.2,  green: 0.4,  blue: 1.0,  alpha: 1)
+
+    /// アクセント SwiftUI Color を返す。
+    static func accentColor(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? accentDark : accentLight
     }
 
-    static let accentColorIds = ["green", "blue", "purple", "pink", "orange", "teal"]
-    static let accentColorDidChangeNotification = Notification.Name("AppSettings.accentColorDidChange")
-
-    /// 指定した ID に対応する SwiftUI Color。ライトモード用は明度高めの macOS 風トーン、ダークモード用は暗い背景で映える色。
-    static func accentColor(for id: String, colorScheme: ColorScheme) -> Color {
-        let isDark = colorScheme == .dark
-        switch id {
-        case "purple":
-            return isDark ? Color(red: 0.65, green: 0.45, blue: 0.9) : Color(red: 0.62, green: 0.44, blue: 0.82)
-        case "orange":
-            return isDark ? Color(red: 1.0, green: 0.65, blue: 0.2) : Color(red: 0.96, green: 0.58, blue: 0.32)
-        case "green":
-            return isDark ? Color(red: 0.35, green: 0.85, blue: 0.5) : Color(red: 0.32, green: 0.78, blue: 0.56)
-        case "teal":
-            return isDark ? Color(red: 0.4, green: 0.75, blue: 0.9) : Color(red: 0.34, green: 0.7, blue: 0.8)
-        case "pink":
-            return isDark ? Color(red: 0.95, green: 0.35, blue: 0.6) : Color(red: 0.88, green: 0.28, blue: 0.62)
-        default: // blue（macOS 標準に近い明るい青）
-            return isDark ? Color(red: 0.4, green: 0.6, blue: 1.0) : Color(red: 0.28, green: 0.48, blue: 0.96)
-        }
-    }
-
-    /// 後方互換: colorScheme 未指定時はライトとして扱う（主に Environment のないテスト用）
-    static func accentColor(for id: String) -> Color {
-        accentColor(for: id, colorScheme: .light)
-    }
-
-    /// 指定した ID に対応する NSColor（メニューバーアイコンなど AppKit 用）。appearance に応じてライト/ダーク用の色を返す。
-    static func accentNSColor(for id: String, appearance: NSAppearance? = nil) -> NSColor {
-        let effectiveAppearance = appearance ?? NSApp.effectiveAppearance
-        let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        switch id {
-        case "purple":
-            return isDark ? NSColor(red: 0.65, green: 0.45, blue: 0.9, alpha: 1) : NSColor(red: 0.62, green: 0.44, blue: 0.82, alpha: 1)
-        case "orange":
-            return isDark ? NSColor(red: 1.0, green: 0.65, blue: 0.2, alpha: 1) : NSColor(red: 0.96, green: 0.58, blue: 0.32, alpha: 1)
-        case "green":
-            return isDark ? NSColor(red: 0.35, green: 0.85, blue: 0.5, alpha: 1) : NSColor(red: 0.32, green: 0.78, blue: 0.56, alpha: 1)
-        case "teal":
-            return isDark ? NSColor(red: 0.4, green: 0.75, blue: 0.9, alpha: 1) : NSColor(red: 0.34, green: 0.7, blue: 0.8, alpha: 1)
-        case "pink":
-            return isDark ? NSColor(red: 0.95, green: 0.35, blue: 0.6, alpha: 1) : NSColor(red: 0.88, green: 0.28, blue: 0.62, alpha: 1)
-        default:
-            return isDark ? NSColor(red: 0.4, green: 0.6, blue: 1.0, alpha: 1) : NSColor(red: 0.28, green: 0.48, blue: 0.96, alpha: 1)
-        }
+    /// アクセント NSColor を返す（メニューバーアイコンなど AppKit 用）。
+    static func accentNSColor(appearance: NSAppearance? = nil) -> NSColor {
+        let effective = appearance ?? NSApp.effectiveAppearance
+        let isDark = effective.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        return isDark ? accentNSDark : accentNSLight
     }
 
     /// アプリの表示言語: "system"（端末の言語） / "ja" / "en"。日本語・英語以外の端末では system 時は英語にフォールバック。
@@ -157,7 +115,6 @@ enum AppSettings {
             launchAtLoginKey: true,
             appearanceModeKey: "system",
             appLanguageKey: "system",
-            accentColorKey: "green",
         ])
     }
 }

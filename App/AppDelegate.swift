@@ -431,7 +431,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         button.wantsLayer = true
 
         // アクセント色のアイコン（paletteColors でカラーレンダリング、isTemplate = false）
-        let accentNS = AppSettings.accentNSColor(for: AppSettings.accentColorId)
+        let accentNS = AppSettings.accentNSColor()
         guard let accentImage = NSImage(
             systemSymbolName: "doc.on.clipboard",
             accessibilityDescription: nil

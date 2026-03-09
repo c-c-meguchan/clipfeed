@@ -121,7 +121,6 @@ struct MenuBarView: View {
     @EnvironmentObject var languageObserver: AppLanguageObserver
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("maxItems") private var maxItems: Int = 50
-    @AppStorage(AppSettings.accentColorKey) private var accentColorId: String = "green"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -155,7 +154,7 @@ struct MenuBarView: View {
                     shouldHaveFocus: clipboardViewModel.focusArea == .search,
                     forceResignTrigger: clipboardViewModel.forceSearchResignTrigger,
                     selectedSourceForSync: clipboardViewModel.selectedSource,
-                    accentNSColor: AppSettings.accentNSColor(for: accentColorId),
+                    accentNSColor: AppSettings.accentNSColor(),
                     onTextChange: { clipboardViewModel.updateSearchText($0) },
                     onBecomeFirstResponder: {
                         // マウスクリックで検索にフォーカスした場合も必ず状態を更新し、カードフォーカスを外して変換確定を効かせる（isRestoringFocusOnPopoverOpen でスキップしない）

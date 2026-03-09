@@ -41,7 +41,6 @@ struct SettingsView: View {
     @State private var launchAtLogin: Bool = AppSettings.launchAtLogin
     @State private var appearanceMode: String = AppSettings.appearanceMode
     @State private var appLanguage: String = AppSettings.appLanguage
-    @State private var accentColorId: String = AppSettings.accentColorId
     @State private var showClearConfirm = false
 
     var body: some View {
@@ -81,7 +80,6 @@ struct SettingsView: View {
             launchAtLogin = AppSettings.launchAtLogin
             appearanceMode = AppSettings.appearanceMode
             appLanguage = AppSettings.appLanguage
-            accentColorId = AppSettings.accentColorId
         }
         .confirmationDialog(L("clear_history_title", fallback: "Clear all history"), isPresented: $showClearConfirm) {
             Button(L("delete", fallback: "Delete"), role: .destructive) {
@@ -122,15 +120,6 @@ struct SettingsView: View {
                     AppSettings.applyAppearance()
                 }
 
-                Picker(L("accent_color", fallback: "Accent color"), selection: $accentColorId) {
-                    ForEach(AppSettings.accentColorIds, id: \.self) { id in
-                        Text(L("accent_\(id)", fallback: Self.accentColorDisplayName(id))).tag(id)
-                    }
-                }
-                .onChange(of: accentColorId) { newValue in
-                    AppSettings.accentColorId = newValue
-                }
-
                 Picker(L("max_items_label", fallback: "Max items to save"), selection: $maxItemCount) {
                     ForEach(AppSettings.maxItemCountOptions, id: \.self) { n in
                         Text(String(format: L("items_count_format", fallback: "%d items"), n)).tag(n)
@@ -155,18 +144,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-    }
-
-    private static func accentColorDisplayName(_ id: String) -> String {
-        switch id {
-        case "blue": return "Blue"
-        case "purple": return "Purple"
-        case "orange": return "Orange"
-        case "green": return "Green"
-        case "teal": return "Teal"
-        case "pink": return "Pink"
-        default: return "Green"
-        }
     }
 
     private var shortcutsDetail: some View {
@@ -237,27 +214,29 @@ struct SettingsView: View {
                     .font(.headline)
             }
             Section {
-                Button {
-                    NSWorkspace.shared.open(Self.contactFormURL)
-                } label: {
-                    HStack {
-                        Image(systemName: "link")
-                        Text(L("contact_button", fallback: "Contact us here"))
+                VStack(spacing: 8) {
+                    Button {
+                        NSWorkspace.shared.open(Self.contactFormURL)
+                    } label: {
+                        HStack {
+                            Image(systemName: "link")
+                            Text(L("contact_button", fallback: "Contact us here"))
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(FlatPrimaryButtonStyle(accentColor: appAccentColor))
+                    .buttonStyle(FlatPrimaryButtonStyle(accentColor: appAccentColor))
 
-                Button {
-                    Self.exportLogToFile(presentingWindow: NSApp.keyWindow)
-                } label: {
-                    HStack {
-                        Image(systemName: "doc.text")
-                        Text(L("export_log", fallback: "Export log"))
+                    Button {
+                        Self.exportLogToFile(presentingWindow: NSApp.keyWindow)
+                    } label: {
+                        HStack {
+                            Image(systemName: "doc.text")
+                            Text(L("export_log", fallback: "Export log"))
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(FlatSecondaryButtonStyle())
                 }
-                .buttonStyle(FlatSecondaryButtonStyle())
             }
         }
         .formStyle(.grouped)
@@ -327,7 +306,6 @@ struct SettingsView: View {
             "--------",
             "App language (setting): \(AppSettings.appLanguage)",
             "Appearance: \(AppSettings.appearanceMode)",
-            "Accent color: \(AppSettings.accentColorId)",
             "Max items: \(AppSettings.maxItemCount)",
             "Launch at login: \(AppSettings.launchAtLogin)",
             "",
@@ -341,27 +319,32 @@ struct SettingsView: View {
     private static func writeLogAndNotify(content: String, to url: URL, presentingWindow: NSWindow?) {
         do {
             try content.write(to: url, atomically: true, encoding: .utf8)
-            let alert = NSAlert()
-            alert.messageText = L("log_export_success", fallback: "Log exported successfully.")
-            alert.informativeText = url.path
-            alert.alertStyle = .informational
-            alert.addButton(withTitle: L("alert_ok", fallback: "OK"))
-            if let window = presentingWindow {
-                alert.beginSheetModal(for: window) { _ in }
-            } else {
-                alert.runModal()
-            }
+            showAlert(
+                message: L("log_export_success", fallback: "Log exported successfully."),
+                info: url.path,
+                style: .informational,
+                window: presentingWindow
+            )
         } catch {
-            let alert = NSAlert()
-            alert.messageText = L("log_export_failed", fallback: "Failed to save log.")
-            alert.informativeText = error.localizedDescription
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: L("alert_ok", fallback: "OK"))
-            if let window = presentingWindow {
-                alert.beginSheetModal(for: window) { _ in }
-            } else {
-                alert.runModal()
-            }
+            showAlert(
+                message: L("log_export_failed", fallback: "Failed to save log."),
+                info: error.localizedDescription,
+                style: .warning,
+                window: presentingWindow
+            )
+        }
+    }
+
+    private static func showAlert(message: String, info: String, style: NSAlert.Style, window: NSWindow?) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.informativeText = info
+        alert.alertStyle = style
+        alert.addButton(withTitle: L("alert_ok", fallback: "OK"))
+        if let window {
+            alert.beginSheetModal(for: window) { _ in }
+        } else {
+            alert.runModal()
         }
     }
 
@@ -410,7 +393,7 @@ private struct FlatPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(.white)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
             .frame(maxWidth: .infinity)
             .background(accentColor.opacity(configuration.isPressed ? 0.85 : 1.0))
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -422,7 +405,7 @@ private struct FlatSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(.primary)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
             .frame(maxWidth: .infinity)
             .background(Color.primary.opacity(configuration.isPressed ? 0.12 : 0.06))
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))

@@ -25,13 +25,6 @@
 "color_mode_system" = "System settings";
 "color_mode_light" = "Light";
 "color_mode_dark" = "Dark";
-"accent_color" = "Accent color";
-"accent_blue" = "Blue";
-"accent_purple" = "Purple";
-"accent_orange" = "Orange";
-"accent_green" = "Green";
-"accent_teal" = "Teal";
-"accent_pink" = "Pink";
 "max_items_label" = "Max items to save";
 "items_count_format" = "%d items";
 "launch_at_login" = "Launch at startup";
