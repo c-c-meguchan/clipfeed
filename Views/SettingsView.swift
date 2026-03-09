@@ -217,13 +217,12 @@ struct SettingsView: View {
                 Button {
                     NSWorkspace.shared.open(Self.buyMeACoffeeURL)
                 } label: {
-                    HStack {
-                        Image(systemName: "cup.and.saucer.fill")
-                        Text(L("buy_me_coffee", fallback: "Buy me a coffee"))
-                    }
-                    .frame(maxWidth: .infinity)
+                    Image("BMCButton")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 32)
                 }
-                .buttonStyle(FlatPrimaryButtonStyle(accentColor: appAccentColor))
+                .buttonStyle(.plain)
             }
         }
         .formStyle(.grouped)
