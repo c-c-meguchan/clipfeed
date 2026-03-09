@@ -21,10 +21,9 @@ private struct CachedThumbnailView: View {
                     .clipped()
                     .overlay(
                         Rectangle()
-                            .fill(appAccentColor.opacity(isHighlit ? 0.35 : 0))
-                            // withAnimation を使わず、このビューだけに animation を閉じ込める
+                            .fill(appAccentColor.opacity(isHighlit ? 0.2 : 0))
                             .animation(
-                                isHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
+                                isHighlit ? .easeIn(duration: 0.15) : .easeOut(duration: 0.35),
                                 value: isHighlit
                             )
                     )
@@ -66,6 +65,7 @@ struct ClipboardCardView: View {
     // @State Bool を onChange で直接変化させ、animation は各ビューに局所付与する。
     @State private var cardIsHighlit: Bool = false
     @State private var ocrIsHighlit: Bool = false
+    @State private var isHovered: Bool = false
 
     var body: some View {
         Group {
@@ -81,6 +81,10 @@ struct ClipboardCardView: View {
         }
         .onChange(of: isOCRHighlighted) { newValue in
             ocrIsHighlit = newValue
+        }
+        .onHover { hovering in
+            guard item.kind == .normal else { return }
+            isHovered = hovering
         }
         .onTapGesture {
             guard item.kind == .normal else { return }
@@ -137,7 +141,7 @@ struct ClipboardCardView: View {
                             textLabel
                                 .foregroundColor(cardIsHighlit ? appAccentColor : .primary)
                                 .animation(
-                                    cardIsHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
+                                    cardIsHighlit ? .easeIn(duration: 0.15) : .easeOut(duration: 0.35),
                                     value: cardIsHighlit
                                 )
                                 .opacity(item.hasBeenReCopied ? 0.5 : 1.0)
@@ -160,6 +164,11 @@ struct ClipboardCardView: View {
         .padding(.horizontal, 12)
         .background(
             RoundedRectangle(cornerRadius: 8)
+                .fill(appAccentColor.opacity(isHovered ? 0.07 : 0))
+                .animation(.easeOut(duration: 0.15), value: isHovered)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(appAccentColor.opacity(isFocused ? 0.9 : 0), lineWidth: 2)
         )
     }
@@ -174,7 +183,7 @@ struct ClipboardCardView: View {
                     .font(.caption)
                     .foregroundColor(ocrIsHighlit ? appAccentColor : .secondary)
                     .animation(
-                        ocrIsHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
+                        ocrIsHighlit ? .easeIn(duration: 0.15) : .easeOut(duration: 0.35),
                         value: ocrIsHighlit
                     )
                     .lineLimit(4)
@@ -192,9 +201,9 @@ struct ClipboardCardView: View {
         .padding(.vertical, 4)
         .padding(.horizontal, 6)
         .background(
-            appAccentColor.opacity(ocrIsHighlit ? 0.26 : 0.06)
+            appAccentColor.opacity(ocrIsHighlit ? 0.15 : 0.06)
                 .animation(
-                    ocrIsHighlit ? .easeIn(duration: 0.2) : .easeOut(duration: 0.8),
+                    ocrIsHighlit ? .easeIn(duration: 0.15) : .easeOut(duration: 0.35),
                     value: ocrIsHighlit
                 )
         )

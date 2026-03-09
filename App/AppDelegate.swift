@@ -346,7 +346,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
-    /// 再コピー／OCRコピー後にフィードバックトーストが消えるタイミング（0.8秒後）でポップオーバーを閉じる
+    /// 再コピー／OCRコピー後にフラッシュが収まるタイミング（0.5秒後）でポップオーバーを閉じる
     private func observeClosePopoverAfterReCopy() {
         NotificationCenter.default.addObserver(
             forName: Self.closePopoverAfterReCopyNotification,
@@ -354,7 +354,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             queue: .main
         ) { [weak self] _ in
             guard let self, let popover = self.popover, popover.isShown else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.togglePopover()
             }
         }
