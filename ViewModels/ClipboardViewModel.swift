@@ -10,11 +10,6 @@ enum CopyTarget: Equatable {
     case ocr(UUID)
 }
 
-enum InputMode {
-    case navigation
-    case search
-}
-
 enum FocusArea {
     case feed
     case search
@@ -27,7 +22,6 @@ final class ClipboardViewModel: ObservableObject {
     @Published var selectedSource: String?
     @Published var highlightedTarget: CopyTarget?
     @Published var searchText: String = ""
-    @Published var inputMode: InputMode = .navigation
     @Published var focusedItemID: UUID?
     @Published var focusArea: FocusArea = .feed
     @Published var isSearchFocused: Bool = false
@@ -86,25 +80,18 @@ final class ClipboardViewModel: ObservableObject {
 
     func updateSearchText(_ text: String) {
         searchText = text
-
-        if text.isEmpty {
-            inputMode = .navigation
-        } else {
-            inputMode = .search
-        }
-
         repairFocusIfNeeded()
     }
 
     private func repairFocusIfNeeded() {
         // 検索フィールドが実際に first responder の間は絶対にカードにフォーカスを付けない
+        // ただしポップオーバー表示直後の復元中は、AppKit の一時フォーカスで保存済み focusedItemID を消さない
         if isSearchFieldActuallyFirstResponder {
-            focusedItemID = nil
+            if !isRestoringFocusOnPopoverOpen { focusedItemID = nil }
             return
         }
-        // 検索フィールドにフォーカスがある間は、フィード側のフォーカスを一切復活させない
         if isSearchFocused || focusArea == .search {
-            focusedItemID = nil
+            if !isRestoringFocusOnPopoverOpen { focusedItemID = nil }
             return
         }
 
@@ -585,7 +572,6 @@ final class ClipboardViewModel: ObservableObject {
     /// 検索状態をクリアしてナビゲーションモードに戻す（Esc や「Esc 戻る」から使用）
     func clearSearchAndReturnToNavigation() {
         searchText = ""
-        inputMode = .navigation
         isSearchFocused = false
         focusArea = .feed
         repairFocusIfNeeded()
@@ -654,7 +640,9 @@ final class ClipboardViewModel: ObservableObject {
         guard isSearchFieldActuallyFirstResponder != value else { return }
         isSearchFieldActuallyFirstResponder = value
         if value {
-            // isRestoringFocusOnPopoverOpen の有無にかかわらず、検索が first responder なら状態を必ず揃える
+            // ポップオーバー表示直後の復元中は AppKit が検索に一時フォーカスを当てるだけなので、
+            // focusArea / focusedItemID を上書きしない（直後の resignSearchFieldFromPopoverWindow で修正される）
+            guard !isRestoringFocusOnPopoverOpen else { return }
             focusArea = .search
             isSearchFocused = true
             focusedItemID = nil
