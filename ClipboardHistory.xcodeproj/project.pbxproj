@@ -11,11 +11,8 @@
 		AA000001 /* ClipboardHistoryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002 /* ClipboardHistoryApp.swift */; };
 		AA000003 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000004 /* MenuBarView.swift */; };
 		AA000005 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006 /* ClipboardItem.swift */; };
-		AA000007 /* Statistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000008 /* Statistics.swift */; };
-		AA000009 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000A /* ClipboardManager.swift */; };
 		AA00000B /* OCRManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000C /* OCRManager.swift */; };
 		AA00000D /* ClipboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000E /* ClipboardMonitor.swift */; };
-		AA00000F /* ClipboardHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000010 /* ClipboardHistoryViewModel.swift */; };
 		AA000025 /* ClipboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000026 /* ClipboardViewModel.swift */; };
 		AA000027 /* MainPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000028 /* MainPopoverView.swift */; };
 		AA000029 /* ClipboardCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00002A /* ClipboardCardView.swift */; };
@@ -37,11 +34,8 @@
 		AA000002 /* ClipboardHistoryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryApp.swift; sourceTree = "<group>"; };
 		AA000004 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/MenuBarView.swift"; sourceTree = SOURCE_ROOT; };
 		AA000006 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/ClipboardItem.swift"; sourceTree = SOURCE_ROOT; };
-		AA000008 /* Statistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/Statistics.swift"; sourceTree = SOURCE_ROOT; };
-		AA00000A /* ClipboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/ClipboardManager.swift"; sourceTree = SOURCE_ROOT; };
 		AA00000C /* OCRManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/OCRManager.swift"; sourceTree = SOURCE_ROOT; };
 		AA00000E /* ClipboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Managers/ClipboardMonitor.swift"; sourceTree = SOURCE_ROOT; };
-		AA000010 /* ClipboardHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewModels/ClipboardHistoryViewModel.swift"; sourceTree = SOURCE_ROOT; };
 		AA000011 /* ClipFeed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClipFeed.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA000026 /* ClipboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewModels/ClipboardViewModel.swift"; sourceTree = SOURCE_ROOT; };
@@ -162,7 +156,6 @@
 		AA000046 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
-				AA00000A /* ClipboardManager.swift */,
 				AA00000E /* ClipboardMonitor.swift */,
 			);
 			name = Managers;
@@ -172,7 +165,6 @@
 			isa = PBXGroup;
 			children = (
 				AA000006 /* ClipboardItem.swift */,
-				AA000008 /* Statistics.swift */,
 			);
 			name = Models;
 			sourceTree = "<group>";
@@ -180,7 +172,6 @@
 		AA000048 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				AA000010 /* ClipboardHistoryViewModel.swift */,
 				AA000026 /* ClipboardViewModel.swift */,
 			);
 			name = ViewModels;
@@ -291,11 +282,8 @@
 				AA00002B /* AppDelegate.swift in Sources */,
 				AA000003 /* MenuBarView.swift in Sources */,
 				AA000005 /* ClipboardItem.swift in Sources */,
-				AA000007 /* Statistics.swift in Sources */,
-				AA000009 /* ClipboardManager.swift in Sources */,
 				AA00000B /* OCRManager.swift in Sources */,
 				AA00000D /* ClipboardMonitor.swift in Sources */,
-				AA00000F /* ClipboardHistoryViewModel.swift in Sources */,
 				AA000025 /* ClipboardViewModel.swift in Sources */,
 				AA000027 /* MainPopoverView.swift in Sources */,
 				AA000029 /* ClipboardCardView.swift in Sources */,

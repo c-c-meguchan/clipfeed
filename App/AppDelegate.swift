@@ -52,7 +52,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var clipboardViewModel: ClipboardViewModel?
-    private var viewModel: ClipboardHistoryViewModel?
     private var localMonitor: Any?
     private var hotKeyRef: EventHotKeyRef?
     private var hotKeyHandlerRef: EventHandlerRef?
@@ -67,9 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         LaunchAtLoginHelper.setEnabled(AppSettings.launchAtLogin)
 
         clipboardViewModel = ClipboardViewModel()
-        viewModel = ClipboardHistoryViewModel()
 
-        guard let clipboardViewModel, let viewModel else { return }
+        guard let clipboardViewModel else { return }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
@@ -86,7 +84,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         popover?.contentViewController = NSHostingController(
             rootView: AccentTintView {
                 MenuBarView()
-                    .environmentObject(viewModel)
                     .environmentObject(clipboardViewModel)
                     .environmentObject(AppLanguageObserver.shared)
             }

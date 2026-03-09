@@ -116,11 +116,9 @@ private struct SearchFieldRepresentable: NSViewRepresentable {
 // MARK: - MenuBarView
 
 struct MenuBarView: View {
-    @EnvironmentObject var viewModel: ClipboardHistoryViewModel
     @EnvironmentObject var clipboardViewModel: ClipboardViewModel
     @EnvironmentObject var languageObserver: AppLanguageObserver
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("maxItems") private var maxItems: Int = 50
 
     var body: some View {
         VStack(spacing: 0) {
@@ -138,9 +136,6 @@ struct MenuBarView: View {
         }
         .id(languageObserver.currentLanguage + "-\(languageObserver.languageChangeSeed)")
         .frame(width: 400, height: 600)
-        .onChange(of: maxItems) { _ in
-            viewModel.enforceMaxItems()
-        }
     }
     
     private var headerView: some View {
@@ -222,7 +217,6 @@ struct MenuBarView: View {
 
 #Preview {
     MenuBarView()
-        .environmentObject(ClipboardHistoryViewModel())
         .environmentObject(ClipboardViewModel())
         .environmentObject(AppLanguageObserver.shared)
 }

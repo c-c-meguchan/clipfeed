@@ -70,6 +70,8 @@ struct MainPopoverView: View {
     @State private var itemFrames: [UUID: CGRect] = [:]
     @State private var scrollVisibleHeight: CGFloat = 400
     @State private var itemFramesCoalescer = ItemFramesCoalescer()
+    /// true の間は focusedItemID 変更時に proxy.scrollTo を呼ばない（手動スクロールによるフォーカス追従時の競合防止）
+    @State private var suppressScrollOnFocusChange = false
 
     /// items から sourceAppName を最新出現順で重複除去し、アイコンデータ付きで生成
     private var sourceTabs: [SourceTab] {
@@ -224,6 +226,13 @@ struct MainPopoverView: View {
                         guard let newIndex = indexByID[id] else { return }
                         let previous = lastFocusedIndex
                         lastFocusedIndex = newIndex
+
+                        // 手動スクロールによるフォーカス追従の場合は scrollTo を呼ばない（ユーザーのスクロールと競合するため）
+                        if suppressScrollOnFocusChange {
+                            suppressScrollOnFocusChange = false
+                            return
+                        }
+
                         guard let prev = previous, prev != newIndex else { return }
 
                         let visibleTop: CGFloat = -scrollOffset
@@ -321,6 +330,7 @@ struct MainPopoverView: View {
             .sorted { (a, b) in (framesToUse[a.id]?.minY ?? 0) < (framesToUse[b.id]?.minY ?? 0) }
             .first
         if let item = visibleItem {
+            suppressScrollOnFocusChange = true
             clipboardViewModel.focusedItemID = item.id
         }
     }
