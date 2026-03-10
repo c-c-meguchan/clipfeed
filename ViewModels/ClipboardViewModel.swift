@@ -32,6 +32,10 @@ final class ClipboardViewModel: ObservableObject {
     /// ショートカット ⌘1〜⌘9 の割り当て順（画面内で上から順）。index 0 = ⌘1 = 一番上の表示アイテム。
     @Published var shortcutOrderedIDs: [UUID] = []
 
+    /// キーボードナビゲーション（moveFocus）の最終実行時刻。
+    /// スクロールアニメーション中の refocus 誤発火を抑制するために View 側で参照する。
+    var lastKeyboardNavigationTime = Date.distantPast
+
     /// ポップオーバーを閉じたときの状態（再開時にフォーカス復元 or 最新にリセットの判定に使用）
     private var lastFocusedItemIDWhenClosed: UUID?
     private var lastFilteredCountWhenClosed: Int?
@@ -150,6 +154,7 @@ final class ClipboardViewModel: ObservableObject {
         }
 
         focusedItemID = displayedItems[newIndex].id
+        lastKeyboardNavigationTime = Date()
     }
     
     /// 1アイテムあたりの保存サイズ上限（2MB）。HTML/テキスト/画像はこの関数で一元チェック。

@@ -312,6 +312,8 @@ struct MainPopoverView: View {
     private func refocusToVisibleItemIfFocusedIsOffScreen(scrollOffset value: CGFloat, itemFrames frames: [UUID: CGRect]? = nil) {
         guard clipboardViewModel.focusArea == .feed else { return }
         guard let currentID = clipboardViewModel.focusedItemID else { return }
+        // キーボードナビゲーション直後はスクロールアニメーション中のフレーム情報が古いため refocus を抑制
+        guard Date().timeIntervalSince(clipboardViewModel.lastKeyboardNavigationTime) > 0.35 else { return }
         let framesToUse = frames ?? itemFrames
         let visibleTop: CGFloat = -value
         let visibleBottom: CGFloat = -value + scrollVisibleHeight
