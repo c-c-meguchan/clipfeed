@@ -109,3 +109,25 @@ git diff v1.0.0..v1.0.1
 - **ダウンロード**: そのリリースに添付した **.dmg の URL** をブラウザで開く
 
 `App/UpdateChecker.swift` 内の `githubRepository`（owner/repo）を、自分のリポジトリ名（例: `c-c-meguchan/clipfeed`）に合わせて変更してください。
+
+---
+
+## （一時）アーカイブ済みリポジトリにリリースを追加する場合
+
+旧体制で直接 .dmg を渡したユーザーを、一度だけ「アップデート確認」で新体制ビルドへ誘導したいとき、**clipfeed-site** がアーカイブ済みだと新規リリースは追加できない。その場合は一時的に Unarchive してから作業する。
+
+1. **Unarchive**
+   - GitHub で `clipfeed-site` を開く
+   - 上部の「This repository has been archived」バナーから **Unarchive** をクリック
+
+2. **リリースを作成**
+   - **Releases** → **Draft a new release**
+   - Tag: 旧ビルドより新しいバージョン（例: `v1.0.1`）
+   - Title / Describe: 任意（例: `ClipFeed 1.0.1 (migration release)`）
+   - **Attach binaries**: 本体リポジトリでビルドした**新体制の** ClipFeed.dmg を添付（UpdateChecker が `c-c-meguchan/clipfeed` を向いているビルド）
+   - **Publish release**
+
+3. **再アーカイブ**
+   - **Settings** → **Danger Zone** → **Archive this repository** で再度アーカイブする
+
+作業が終わったらこのセクションは削除してよい。
