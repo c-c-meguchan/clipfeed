@@ -8,8 +8,8 @@ final class UpdateChecker {
     /// 設定ウィンドウ(200)より前面に出すためのレベル
     private static let alertWindowLevel = NSWindow.Level(rawValue: 201)
 
-    /// GitHub の owner/repo（要差し替え）
-    private let githubRepository = "c-c-meguchan/clipfeed-site"
+    /// GitHub の owner/repo（本体リポジトリ）。例: "c-c-meguchan/clipfeed"
+    private let githubRepository = "c-c-meguchan/clipfeed"
 
     private var latestReleaseURL: URL {
         URL(string: "https://api.github.com/repos/\(githubRepository)/releases/latest")!

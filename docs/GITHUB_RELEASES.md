@@ -2,8 +2,10 @@
 
 ## 構造
 
+このリポジトリ（ClipFeed 本体）で GitHub Releases を管理します。
+
 ```
-GitHub リポジトリ
+GitHub リポジトリ (c-c-meguchan/clipfeed)
  ├ Source code（main ブランチなど）
  └ Releases
       ├ v1.0.0  ← ここに ClipFeed.dmg を添付
@@ -13,7 +15,7 @@ GitHub リポジトリ
 
 - **Releases** = バージョンごとの「配布パッケージ」を置く場所
 - 各リリースに **ClipFeed.dmg** を添付すると、ユーザーはその URL からダウンロードできる
-- アプリ内「アップデートを確認」は、GitHub の「最新リリース」と現在のバージョンを比較し、新しい場合はそのリリースの .dmg を開く
+- アプリ内「アップデートを確認」は、この本体リポジトリの「最新リリース」と現在のバージョンを比較し、新しい場合はそのリリースの .dmg を開く
 
 ## メリット
 
@@ -106,4 +108,4 @@ git diff v1.0.0..v1.0.1
 - **比較**: リリースの `tag_name`（例: v1.0.0）とアプリの `CFBundleShortVersionString` を比較
 - **ダウンロード**: そのリリースに添付した **.dmg の URL** をブラウザで開く
 
-`UpdateChecker.swift` 内の `githubRepository`（owner/repo）を、自分のリポジトリ名に合わせて変更してください。
+`App/UpdateChecker.swift` 内の `githubRepository`（owner/repo）を、自分のリポジトリ名（例: `c-c-meguchan/clipfeed`）に合わせて変更してください。
