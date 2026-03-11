@@ -18,6 +18,12 @@ struct ClipboardStore: Codable {
     let items: [ClipboardItem]
 }
 
+/// クリップボード1件あたりのコンテンツサイズ上限（読み取り・保存で共通）。
+/// Monitor はこの値を超える生データをアプリに渡さず、ViewModel はこの値を超えるアイテムを保存しない。
+enum ClipboardSizeLimit {
+    static let maxContentBytes = 2_000_000  // 2MB
+}
+
 struct ClipboardItem: Identifiable, Equatable, Codable {
     let id: UUID
     let createdAt: Date

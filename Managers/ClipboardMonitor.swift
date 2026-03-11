@@ -10,6 +10,9 @@ class ClipboardMonitor: ObservableObject {
     @Published var copiedText: String?
     @Published var imageData: Data?
 
+    /// 2MB超でスキップしたときに ViewModel がプレースホルダを挿入するためにセットする。ViewModel が処理したら clearSkippedOversizedContent() でクリア。
+    @Published var skippedOversizedContent: (sourceAppName: String?, sourceBundleID: String?, sourceAppIconData: Data?)?
+
     /// copiedText / imageData が発火した時点で ViewModel が同期的に読み取れるよう保持
     private(set) var latestRTFData: Data?
     private(set) var latestHTMLData: Data?
@@ -37,6 +40,11 @@ class ClipboardMonitor: ObservableObject {
     func setChangeCountProvider(get: @escaping () -> Int, set: @escaping (Int) -> Void) {
         changeCountGet = get
         changeCountSet = set
+    }
+
+    /// skippedOversizedContent をクリア（ViewModel がプレースホルダ挿入後に呼ぶ）
+    func clearSkippedOversizedContent() {
+        skippedOversizedContent = nil
     }
 
     private init() {}
@@ -86,11 +94,17 @@ class ClipboardMonitor: ObservableObject {
         let html = pasteboard.data(forType: .html)
         let text = pasteboard.string(forType: .string)
 
-        let resolvedImageData: Data?
+        var resolvedImageData: Data?
         if let d = pasteboard.data(forType: .png), !d.isEmpty {
-            resolvedImageData = d
+            resolvedImageData = d.count <= ClipboardSizeLimit.maxContentBytes ? d : nil
+            if d.count > ClipboardSizeLimit.maxContentBytes {
+                LogCapture.record("[Clipboard] PNG skipped (size \(d.count) > \(ClipboardSizeLimit.maxContentBytes))")
+            }
         } else if let d = pasteboard.data(forType: .tiff), !d.isEmpty {
-            resolvedImageData = d
+            resolvedImageData = d.count <= ClipboardSizeLimit.maxContentBytes ? d : nil
+            if d.count > ClipboardSizeLimit.maxContentBytes {
+                LogCapture.record("[Clipboard] TIFF skipped (size \(d.count) > \(ClipboardSizeLimit.maxContentBytes))")
+            }
         } else {
             resolvedImageData = nil
         }
@@ -126,8 +140,24 @@ class ClipboardMonitor: ObservableObject {
             return
         }
 
-        // ② テキスト系
+        // ② テキスト系（長文・巨大HTMLはメモリ負荷で落ちるため上限でスキップ）
         if hasRTF || hasString {
+            let textSize = (text ?? "").utf8.count
+            let rtfSize = rtf?.count ?? 0
+            let htmlSize = html?.count ?? 0
+            let totalSize = textSize + rtfSize + htmlSize
+            if totalSize > ClipboardSizeLimit.maxContentBytes {
+                LogCapture.record("[Clipboard] Text/RTF/HTML skipped (total \(totalSize) > \(ClipboardSizeLimit.maxContentBytes))")
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.latestRTFData = nil
+                    self.latestHTMLData = nil
+                    self.copiedText = nil
+                    self.imageData = nil
+                    self.skippedOversizedContent = (source?.name, source?.bundleID, source?.iconData)
+                }
+                return
+            }
             let rtfCopy = rtf
             let htmlCopy = html
             let textCopy = text ?? ""
@@ -146,8 +176,20 @@ class ClipboardMonitor: ObservableObject {
             return
         }
 
-        // ③ HTML fallback（画像 URL 取得を試行）
+        // ③ HTML fallback（画像 URL 取得を試行）。巨大HTMLはスキップ。
         if hasHTML, let htmlData = html, let htmlString = String(data: htmlData, encoding: .utf8) {
+            if htmlData.count > ClipboardSizeLimit.maxContentBytes {
+                LogCapture.record("[Clipboard] HTML skipped (size \(htmlData.count) > \(ClipboardSizeLimit.maxContentBytes))")
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.latestRTFData = nil
+                    self.latestHTMLData = nil
+                    self.copiedText = nil
+                    self.imageData = nil
+                    self.skippedOversizedContent = (source?.name, source?.bundleID, source?.iconData)
+                }
+                return
+            }
             fetchImageFromHTML(htmlString, changeCount: expectedChangeCount, source: source)
             return
         }

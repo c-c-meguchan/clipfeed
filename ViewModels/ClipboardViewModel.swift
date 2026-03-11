@@ -99,18 +99,20 @@ final class ClipboardViewModel: ObservableObject {
             return
         }
 
-        guard !displayedItems.isEmpty else {
+        // フォーカス対象は kind == .normal のみ（2MB 超プレースホルダはフォーカスしない）
+        let focusableItems = displayedItems.filter { $0.kind == .normal }
+        guard !focusableItems.isEmpty else {
             focusedItemID = nil
             return
         }
 
         if let focused = focusedItemID,
-           displayedItems.contains(where: { $0.id == focused }) {
+           focusableItems.contains(where: { $0.id == focused }) {
             return
         }
 
-        // 最新アイテム（一番上）にフォーカスを合わせる
-        focusedItemID = displayedItems.first?.id
+        // 最新の通常アイテム（一番上）にフォーカスを合わせる
+        focusedItemID = focusableItems.first?.id
     }
 
     /// タブを delta 分だけ循環切替（nil = "すべて" を先頭に含む）
@@ -139,29 +141,29 @@ final class ClipboardViewModel: ObservableObject {
             repairFocusIfNeeded()
         }
 
+        // フォーカス対象は kind == .normal のみ
+        let focusableItems = displayedItems.filter { $0.kind == .normal }
+        guard !focusableItems.isEmpty else { return }
+
         guard let current = focusedItemID,
-              let index = displayedItems.firstIndex(where: { $0.id == current }) else { return }
+              let index = focusableItems.firstIndex(where: { $0.id == current }) else { return }
 
         let newIndex: Int
 
         switch direction {
         case .down:
-            newIndex = min(index + 1, displayedItems.count - 1)
+            newIndex = min(index + 1, focusableItems.count - 1)
         case .up:
             newIndex = max(index - 1, 0)
         default:
             return
         }
 
-        focusedItemID = displayedItems[newIndex].id
+        focusedItemID = focusableItems[newIndex].id
         lastKeyboardNavigationTime = Date()
     }
     
-    /// 1アイテムあたりの保存サイズ上限（2MB）。HTML/テキスト/画像はこの関数で一元チェック。
-    private static let maxItemSize = 2_000_000
-    /// JSON 全体のサイズ上限（100MB）。performWrite 内でのみ参照。UI件数とは別の安全制限。
-    private static let maxTotalJSON = 100_000_000  // 100MB
-
+    /// 1アイテムあたりの保存サイズ上限は ClipboardSizeLimit.maxContentBytes（2MB）。HTML/テキスト/画像はこの関数で一元チェック。
     /// Application Support / ClipFeed / clipboard.json
     private static var persistenceFileURL: URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -174,7 +176,10 @@ final class ClipboardViewModel: ObservableObject {
         persistenceFileURL.deletingLastPathComponent().appendingPathComponent("backup.json", isDirectory: false)
     }
 
-    /// 保存直前に必ず通す。1アイテムの実データ合計が maxItemSize 以下なら true。
+    /// JSON 全体のサイズ上限（100MB）。performWrite 内でのみ参照。UI件数とは別の安全制限。
+    private static let maxTotalJSON = 100_000_000  // 100MB
+
+    /// 保存直前に必ず通す。1アイテムの実データ合計が ClipboardSizeLimit.maxContentBytes 以下なら true。
     /// 超過時はログを出して false（追加・保存しない）。
     /// ※ sourceAppIconData はメタデータのため合計に含めない（TIFF が巨大になり全件 2MB 超過するのを防ぐ）
     private static func validateItemSize(_ item: ClipboardItem) -> Bool {
@@ -192,7 +197,7 @@ final class ClipboardViewModel: ObservableObject {
         // sourceAppIconData は除外（アプリアイコン TIFF が 2MB 超になることがあるため）
         total += item.ocrText?.utf8.count ?? 0
         total += item.ocrResult?.utf8.count ?? 0
-        if total > maxItemSize {
+        if total > ClipboardSizeLimit.maxContentBytes {
             LogCapture.record("[ClipboardVM] validateItemSize: OVER limit — \(total) bytes")
             return false
         }
@@ -283,7 +288,35 @@ final class ClipboardViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
+        monitor.$skippedOversizedContent
+            .compactMap { $0 }
+            .sink { [weak self] source in
+                self?.handleSkippedOversizedContent(sourceAppName: source.0, sourceBundleID: source.1, sourceAppIconData: source.2)
+            }
+            .store(in: &cancellables)
+        
         // 監視は load 完了後に開始（load 前に発火した「1件」で save が上書きされる不具合を防ぐ）
+    }
+    
+    /// Monitor が 2MB 超でスキップしたときに呼ばれる。プレースホルダを挿入してフラグをクリアする。
+    private func handleSkippedOversizedContent(sourceAppName: String?, sourceBundleID: String?, sourceAppIconData: Data?) {
+        if !loadCompleted { return }
+        let placeholder = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            kind: .oversizedPlaceholder,
+            type: .text,
+            text: "⚠ 2MBを超えているため再コピーできません",
+            isPinned: false,
+            sourceAppName: sourceAppName,
+            sourceBundleID: sourceBundleID,
+            sourceAppIconData: sourceAppIconData
+        )
+        items.insert(placeholder, at: 0)
+        enforceMaxItems()
+        saveToDisk()
+        monitor.clearSkippedOversizedContent()
+        LogCapture.record("[ClipboardVM] Oversized content placeholder inserted (skipped by Monitor)")
     }
     
     private func handleClipboardText(_ text: String, rtf: Data? = nil, html: Data? = nil) {
@@ -337,10 +370,13 @@ final class ClipboardViewModel: ObservableObject {
                 type: .text,
                 text: "⚠ 2MBを超えているため再コピーできません",
                 isPinned: false,
-                sourceAppName: monitor.latestSourceAppName
+                sourceAppName: monitor.latestSourceAppName,
+                sourceBundleID: monitor.latestSourceBundleID,
+                sourceAppIconData: monitor.latestSourceAppIconData
             )
             items.insert(placeholder, at: 0)
             enforceMaxItems()
+            saveToDisk()
             LogCapture.record("[ClipboardVM] Oversized item placeholder inserted")
             return
         }
@@ -353,6 +389,7 @@ final class ClipboardViewModel: ObservableObject {
         items.insert(newItem, at: 0)
         enforceMaxItems()
         saveToDisk()
+        focusedItemID = newItem.id
         let totalHTMLBytes = items.compactMap { $0.html }.reduce(0) { $0 + $1.utf8.count }
         LogCapture.record("[ClipboardVM] Current clipboard items: \(items.count), total HTML in memory: \(totalHTMLBytes) bytes (\(String(format: "%.2f", Double(totalHTMLBytes) / 1_000_000)) MB)")
     }
@@ -370,21 +407,8 @@ final class ClipboardViewModel: ObservableObject {
             return
         }
 
-        let imageDataToStore = Self.reencodeImageData(data) ?? data
-        let contentHashValue = Self.contentHash(text: nil, html: nil, imageData: imageDataToStore)
-        let newItem = ClipboardItem(
-            kind: .normal,
-            type: .image,
-            imageData: imageDataToStore,
-            thumbnailData: nil,
-            isPinned: false,
-            sourceAppName: monitor.latestSourceAppName,
-            sourceBundleID: monitor.latestSourceBundleID,
-            sourceAppIconData: monitor.latestSourceAppIconData,
-            contentHash: contentHashValue
-        )
-
-        if !Self.validateItemSize(newItem) {
+        // 巨大画像は reencode 前に弾く（TIFF のデコードでメモリが爆発するのを防ぐ）
+        if data.count > ClipboardSizeLimit.maxContentBytes {
             let placeholder = ClipboardItem(
                 id: UUID(),
                 createdAt: Date(),
@@ -392,32 +416,83 @@ final class ClipboardViewModel: ObservableObject {
                 type: .image,
                 text: "⚠ 2MBを超えているため再コピーできません",
                 isPinned: false,
-                sourceAppName: monitor.latestSourceAppName
+                sourceAppName: monitor.latestSourceAppName,
+                sourceBundleID: monitor.latestSourceBundleID,
+                sourceAppIconData: monitor.latestSourceAppIconData
             )
             items.insert(placeholder, at: 0)
             enforceMaxItems()
-            LogCapture.record("[ClipboardVM] Oversized item placeholder inserted")
+            saveToDisk()
+            LogCapture.record("[ClipboardVM] Image rejected before reencode (size \(data.count) > \(ClipboardSizeLimit.maxContentBytes))")
             return
         }
 
-        if items.first?.contentHash == contentHashValue {
-            LogCapture.record("[ClipboardVM] Skipped duplicate (same content as previous item)")
-            return
-        }
+        let sourceName = monitor.latestSourceAppName
+        let sourceBundleID = monitor.latestSourceBundleID
+        let sourceIconData = monitor.latestSourceAppIconData
 
-        items.insert(newItem, at: 0)
-        enforceMaxItems()
-        saveToDisk()
-        LogCapture.record("[Image] size: \(data.count) bytes (\(String(format: "%.2f", Double(data.count) / 1_000_000)) MB)")
-        LogCapture.record("Current clipboard items count: \(items.count)")
-
-        let itemId = newItem.id
+        // reencode / ハッシュ / アイテム組み立てはバックグラウンドで実行（TIFF→PNG など重い処理でメインが落ちないように）
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let thumbData = Self.makeThumbnailData(from: data, maxSize: 80) else { return }
-            DispatchQueue.main.async {
-                guard let self = self,
-                      let idx = self.items.firstIndex(where: { $0.id == itemId }) else { return }
-                self.items[idx].thumbnailData = thumbData
+            guard let self else { return }
+            let imageDataToStore = Self.reencodeImageData(data) ?? data
+            let contentHashValue = Self.contentHash(text: nil, html: nil, imageData: imageDataToStore)
+            let newItem = ClipboardItem(
+                kind: .normal,
+                type: .image,
+                imageData: imageDataToStore,
+                thumbnailData: nil,
+                isPinned: false,
+                sourceAppName: sourceName,
+                sourceBundleID: sourceBundleID,
+                sourceAppIconData: sourceIconData,
+                contentHash: contentHashValue
+            )
+
+            if !Self.validateItemSize(newItem) {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    let placeholder = ClipboardItem(
+                        id: UUID(),
+                        createdAt: Date(),
+                        kind: .oversizedPlaceholder,
+                        type: .image,
+                        text: "⚠ 2MBを超えているため再コピーできません",
+                        isPinned: false,
+                        sourceAppName: sourceName,
+                        sourceBundleID: sourceBundleID,
+                        sourceAppIconData: sourceIconData
+                    )
+                    self.items.insert(placeholder, at: 0)
+                    self.enforceMaxItems()
+                    self.saveToDisk()
+                    LogCapture.record("[ClipboardVM] Oversized item placeholder inserted (after reencode)")
+                }
+                return
+            }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if self.items.first?.contentHash == contentHashValue {
+                    LogCapture.record("[ClipboardVM] Skipped duplicate (same content as previous item)")
+                    return
+                }
+                self.items.insert(newItem, at: 0)
+                self.enforceMaxItems()
+                self.saveToDisk()
+                self.focusedItemID = newItem.id
+                LogCapture.record("[Image] size: \(data.count) bytes (\(String(format: "%.2f", Double(data.count) / 1_000_000)) MB)")
+                LogCapture.record("Current clipboard items count: \(self.items.count)")
+
+                let itemId = newItem.id
+                let imageDataForThumb = data
+                DispatchQueue.global(qos: .utility).async { [weak self] in
+                    guard let thumbData = Self.makeThumbnailData(from: imageDataForThumb, maxSize: 80) else { return }
+                    DispatchQueue.main.async {
+                        guard let self = self,
+                              let idx = self.items.firstIndex(where: { $0.id == itemId }) else { return }
+                        self.items[idx].thumbnailData = thumbData
+                    }
+                }
             }
         }
     }
@@ -660,13 +735,14 @@ final class ClipboardViewModel: ObservableObject {
         focusArea = .feed
         isSearchFocused = false
 
-        guard !displayedItems.isEmpty else {
+        let focusableItems = displayedItems.filter { $0.kind == .normal }
+        guard !focusableItems.isEmpty else {
             focusedItemID = nil
             return true
         }
 
         let currentCount = filteredItems.count
-        let currentLatestID = displayedItems.first?.id
+        let currentLatestID = focusableItems.first?.id
 
         // 初回起動 or 閉じている間に新規コピーが追加された → 最新にフォーカス
         if lastFilteredCountWhenClosed == nil {
@@ -684,7 +760,7 @@ final class ClipboardViewModel: ObservableObject {
 
         // 前回のフォーカス位置を復元（表示中に残っていれば）
         if let saved = lastFocusedItemIDWhenClosed,
-           displayedItems.contains(where: { $0.id == saved }) {
+           focusableItems.contains(where: { $0.id == saved }) {
             focusedItemID = saved
             return false
         }
@@ -785,7 +861,7 @@ final class ClipboardViewModel: ObservableObject {
         pendingSaveWorkItem = nil
         if immediate {
             let snapshot = items.filter { $0.kind == .normal }
-            performWrite(snapshot: snapshot)
+            performWrite(snapshot: snapshot, completion: nil)
             return
         }
         saveGeneration += 1
@@ -795,70 +871,79 @@ final class ClipboardViewModel: ObservableObject {
             if self.saveGeneration != generation { return }
             self.pendingSaveWorkItem = nil
             let snapshot = self.items.filter { $0.kind == .normal }
-            self.performWrite(snapshot: snapshot)
+            self.performWrite(snapshot: snapshot, completion: nil)
         }
         pendingSaveWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + saveDebounceInterval, execute: workItem)
     }
 
-    /// 渡された snapshot を同期的にエンコード・書き込む。保存前に current → backup へコピーする。
+    /// 渡された snapshot をバックグラウンドでエンコード・書き込む。保存前に current → backup へコピーする。
     /// 安全制限: data.count > maxTotalJSON の場合のみ古いアイテムを削除して再エンコード（UI件数とは別の二段階防御）。
     /// sourceAppIconData は永続化しない（TIFF が大きく合計で 100MB を超え、サイズ制限削除で他アイテムが消える不具合を防ぐ）。
-    private func performWrite(snapshot: [ClipboardItem]) {
-        LogCapture.record("[saveToDisk] performWrite — 書き込む件数: \(snapshot.count)")
+    /// completion: 書き込み完了後に呼ぶ（saveToDiskAndWait で待機するために使用）
+    private func performWrite(snapshot: [ClipboardItem], completion: (() -> Void)?) {
         let url = Self.persistenceFileURL
         let backupURL = Self.backupFileURL
-        let dir = url.deletingLastPathComponent()
-        if !FileManager.default.fileExists(atPath: dir.path) {
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        }
-        // 保存前に current → backup へコピー
-        if FileManager.default.fileExists(atPath: url.path) {
-            do {
-                let currentData = try Data(contentsOf: url)
-                try currentData.write(to: backupURL, options: .atomic)
-                LogCapture.record("[ClipboardVM] backup: clipboard.json → backup.json (\(currentData.count) bytes)")
-            } catch {
-                LogCapture.record("[ClipboardVM] backup failed (current → backup): \(error)")
+        let maxTotalJSON = Self.maxTotalJSON
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self else { return }
+            LogCapture.record("[saveToDisk] performWrite — 書き込む件数: \(snapshot.count)")
+            let dir = url.deletingLastPathComponent()
+            if !FileManager.default.fileExists(atPath: dir.path) {
+                try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             }
-        }
-        let encoder = JSONEncoder()
-        var persistableItems = snapshot.map { item in
-            var c = item
-            c.sourceAppIconData = nil
-            return c
-        }
-        var data: Data
-        do {
-            data = try encoder.encode(ClipboardStore(version: 1, items: persistableItems))
-        } catch {
-            LogCapture.record("[ClipboardVM] saveToDisk failed (encode): \(error)")
-            return
-        }
-        if data.count > Self.maxTotalJSON {
-            LogCapture.record("[ClipboardVM] saveToDisk: JSON size \(data.count) > \(Self.maxTotalJSON), trimming oldest items")
-        }
-        while data.count > Self.maxTotalJSON && !persistableItems.isEmpty {
-            let sorted = persistableItems.sorted { $0.createdAt < $1.createdAt }
-            guard let toRemove = sorted.first(where: { !$0.isPinned }),
-                  let idx = persistableItems.firstIndex(where: { $0.id == toRemove.id }) else { break }
-            persistableItems.remove(at: idx)
+            // 保存前に current → backup へコピー
+            if FileManager.default.fileExists(atPath: url.path) {
+                do {
+                    let currentData = try Data(contentsOf: url)
+                    try currentData.write(to: backupURL, options: .atomic)
+                    LogCapture.record("[ClipboardVM] backup: clipboard.json → backup.json (\(currentData.count) bytes)")
+                } catch {
+                    LogCapture.record("[ClipboardVM] backup failed (current → backup): \(error)")
+                }
+            }
+            let encoder = JSONEncoder()
+            var persistableItems = snapshot.map { item in
+                var c = item
+                c.sourceAppIconData = nil
+                return c
+            }
+            var data: Data
             do {
                 data = try encoder.encode(ClipboardStore(version: 1, items: persistableItems))
             } catch {
-                LogCapture.record("[ClipboardVM] saveToDisk failed (re-encode): \(error)")
+                LogCapture.record("[ClipboardVM] saveToDisk failed (encode): \(error)")
+                completion?()
                 return
             }
-        }
-        do {
-            try data.write(to: url, options: .atomic)
-            LogCapture.record("[ClipboardVM] saveToDisk success: \(persistableItems.count) items → \(url.path)")
-        } catch {
-            LogCapture.record("[ClipboardVM] saveToDisk failed (write): \(error)")
+            if data.count > maxTotalJSON {
+                LogCapture.record("[ClipboardVM] saveToDisk: JSON size \(data.count) > \(maxTotalJSON), trimming oldest items")
+            }
+            while data.count > maxTotalJSON && !persistableItems.isEmpty {
+                let sorted = persistableItems.sorted { $0.createdAt < $1.createdAt }
+                guard let toRemove = sorted.first(where: { !$0.isPinned }),
+                      let idx = persistableItems.firstIndex(where: { $0.id == toRemove.id }) else { break }
+                persistableItems.remove(at: idx)
+                do {
+                    data = try encoder.encode(ClipboardStore(version: 1, items: persistableItems))
+                } catch {
+                    LogCapture.record("[ClipboardVM] saveToDisk failed (re-encode): \(error)")
+                    completion?()
+                    return
+                }
+            }
+            do {
+                try data.write(to: url, options: .atomic)
+                LogCapture.record("[ClipboardVM] saveToDisk success: \(persistableItems.count) items → \(url.path)")
+            } catch {
+                LogCapture.record("[ClipboardVM] saveToDisk failed (write): \(error)")
+            }
+            completion?()
         }
     }
 
-    /// アプリ終了時に呼ぶ。保留中のデバウンスをキャンセルし、現在の items を同期的に書き込む。
+    /// アプリ終了時に呼ぶ。保留中のデバウンスをキャンセルし、現在の items を書き込み完了まで待つ。
     func saveToDiskAndWait() {
         guard Thread.isMainThread else {
             DispatchQueue.main.sync { saveToDiskAndWait() }
@@ -867,7 +952,10 @@ final class ClipboardViewModel: ObservableObject {
         pendingSaveWorkItem?.cancel()
         pendingSaveWorkItem = nil
         let snapshot = items.filter { $0.kind == .normal }
-        performWrite(snapshot: snapshot)
+        let group = DispatchGroup()
+        group.enter()
+        performWrite(snapshot: snapshot) { group.leave() }
+        group.wait()
     }
 
     /// 永続化ファイルから読み込み。失敗時は backup.json から復元を試みる。両方失敗時のみ空配列。
