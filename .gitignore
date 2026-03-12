@@ -74,3 +74,8 @@ out/
 # VSCode / Cursor (optional: remove if you want to track)
 # .vscode/
 # .cursor/
+
+# Sparkle 用のリリース成果物は Git 管理しない
+ReleaseArtifacts/
+*.dmg
+*.zip
