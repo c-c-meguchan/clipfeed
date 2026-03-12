@@ -8,15 +8,19 @@ private final class SearchNSTextField: NSTextField {
     var onResignFirstResponder: (() -> Void)?
 
     override func becomeFirstResponder() -> Bool {
-        let block = onBecomeFirstResponder
-        DispatchQueue.main.async { block?() }
-        return super.becomeFirstResponder()
+        let became = super.becomeFirstResponder()
+        if became {
+            onBecomeFirstResponder?()
+        }
+        return became
     }
 
     override func resignFirstResponder() -> Bool {
-        let block = onResignFirstResponder
-        DispatchQueue.main.async { block?() }
-        return super.resignFirstResponder()
+        let resigned = super.resignFirstResponder()
+        if resigned {
+            onResignFirstResponder?()
+        }
+        return resigned
     }
 
     override var focusRingType: NSFocusRingType {
@@ -63,9 +67,9 @@ private struct SearchFieldRepresentable: NSViewRepresentable {
         if shouldHaveFocus, let window = nsView.window, window.firstResponder != nsView.currentEditor() && window.firstResponder != nsView {
             window.makeFirstResponder(nsView)
         }
-        if !shouldHaveFocus, let window = nsView.window, window.firstResponder == nsView || window.firstResponder == nsView.currentEditor() {
-            window.makeFirstResponder(nil)
-        }
+        // 注意: shouldHaveFocus が false のときに makeFirstResponder(nil) すると、
+        // クリック直後の再描画で古い focusArea が使われ、検索フォーカスが一瞬で外れるバグの原因になる。
+        // 検索の resign は forceResignTrigger（Tab→フィードや「戻る」など）のみで行う。
         if forceResignTrigger != context.coordinator.lastResignTrigger {
             context.coordinator.lastResignTrigger = forceResignTrigger
             nsView.window?.makeFirstResponder(nil)

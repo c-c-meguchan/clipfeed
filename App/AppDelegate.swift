@@ -168,7 +168,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             if !f.contains(.command) && !f.contains(.option) && !f.contains(.shift) && event.keyCode == 48 { // kVK_Tab
                 if let vm = self.clipboardViewModel {
                     if vm.focusArea == .search || vm.isSearchFocused {
-                        // 検索 → フィード
+                        // 検索 → フィード: 検索フィールドから first responder を外すため明示的にトリガー
+                        vm.setSearchResign()
                         vm.focusArea = .feed
                         vm.ensureFeedFocus()
                     } else {
