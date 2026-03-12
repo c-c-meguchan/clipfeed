@@ -1,0 +1,60 @@
+name: Update Sparkle appcast
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-appcast:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Sparkle distribution (tools only)
+        run: |
+          mkdir -p sparkle-dist
+          curl -L https://github.com/sparkle-project/Sparkle/releases/latest/download/Sparkle-2.x.tar.xz -o sparkle.tar.xz
+          tar xf sparkle.tar.xz -C sparkle-dist --strip-components=1
+
+      - name: Download DMG asset for this release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          mkdir -p "ReleaseArtifacts/${TAG}"
+          # ClipFeed*.dmg という名前の DMG を 1 個添付している前提
+          gh release download "$TAG" --pattern "ClipFeed*.dmg" --dir "ReleaseArtifacts/${TAG}"
+
+      - name: Generate appcast.xml
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          ./sparkle-dist/bin/generate_appcast "ReleaseArtifacts/${TAG}"
+
+      - name: Commit appcast.xml to gh-pages
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          APPCAST_SOURCE="ReleaseArtifacts/${TAG}/appcast.xml"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # gh-pages ブランチをチェックアウト（無ければ作成）
+          git fetch origin gh-pages || true
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            rm -rf .
+          fi
+
+          mv "$APPCAST_SOURCE" appcast.xml
+          git add appcast.xml
+          git commit -m "Update appcast for $TAG" || echo "No changes to commit"
+          git push origin gh-pages
+
