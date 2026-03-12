@@ -94,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         observeAppearanceChanges()
         observeOpenSettings()
         observeClosePopoverAfterReCopy()
+        observeClosePopover()
 
         UpdateChecker.shared.checkForUpdates()
 
@@ -336,6 +337,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     static let openSettingsNotification = Notification.Name("AppDelegate.openSettings")
     static let closePopoverAfterReCopyNotification = Notification.Name("AppDelegate.closePopoverAfterReCopy")
+    /// ポップオーバーを閉じる（開閉ショートカットで閉じた時と同じ。アプリは終了せずメニューバーに残る）
+    static let closePopoverNotification = Notification.Name("AppDelegate.closePopover")
 
     private func observeOpenSettings() {
         NotificationCenter.default.addObserver(
@@ -358,6 +361,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.togglePopover()
             }
+        }
+    }
+
+    /// ヘッダーのバツボタンなどから「ポップオーバーを閉じる」のみ行う（アプリは終了せずメニューバーに残る）
+    private func observeClosePopover() {
+        NotificationCenter.default.addObserver(
+            forName: Self.closePopoverNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, let popover = self.popover, popover.isShown else { return }
+            popover.performClose(nil)
         }
     }
 

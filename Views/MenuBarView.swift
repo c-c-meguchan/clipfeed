@@ -181,7 +181,7 @@ struct MenuBarView: View {
             }
             .buttonStyle(.plain)
             Button {
-                NSApplication.shared.terminate(nil)
+                NotificationCenter.default.post(name: AppDelegate.closePopoverNotification, object: nil)
             } label: {
                 Image(systemName: "xmark")
             }
