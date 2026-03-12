@@ -15,14 +15,14 @@ GitHub リポジトリ (c-c-meguchan/clipfeed)
 
 - **Releases** = バージョンごとの「配布パッケージ」を置く場所
 - 各リリースに **ClipFeed.dmg** を添付すると、ユーザーはその URL からダウンロードできる
-- アプリ内「アップデートを確認」は、この本体リポジトリの「最新リリース」と現在のバージョンを比較し、新しい場合はそのリリースの .dmg を開く
+- アプリ内「更新を確認」は **Sparkle** により、**Appcast** を参照して更新の有無を判定し、あればダウンロード・インストールまで行う（詳細は [Sparkle 導入・運用](SPARKLE_SETUP.md) を参照）
 
 ## メリット
 
 | やりたいこと     | やり方 |
 |------------------|--------|
 | ユーザー配布     | リリースページの URL を共有するか、.dmg を直接ダウンロードさせる |
-| アップデート管理 | アプリが「最新リリース」を取得し、バージョン比較 → 新しければ「ダウンロード」で .dmg を開く |
+| アップデート管理 | Sparkle が Appcast を参照し、新バージョンがあればダウンロード・インストールを案内 |
 | 履歴管理         | 過去のリリース（v1.0.0, v1.0.1...）が一覧で残る |
 
 ---
@@ -50,7 +50,7 @@ GitHub リポジトリ (c-c-meguchan/clipfeed)
 
 ```bash
 # 現在の最新コミットにタグを付ける
-git tag v1.0.1
+git tag v1.0.2
 
 # 過去のコミットにタグを付けたい場合はハッシュを指定
 git tag v1.0.0 536518f
@@ -59,7 +59,7 @@ git tag v1.0.0 536518f
 git tag -l
 
 # タグをリモート（GitHub）に送る
-git push origin v1.0.1
+git push origin v1.0.2
 
 # 全タグをまとめて送る場合
 git push origin --tags
@@ -79,9 +79,16 @@ git push origin --tags
 5. **Attach binaries**: **ClipFeed.dmg** をドラッグ＆ドロップ
 6. **Publish release** をクリック
 
-### 5. 以降のバージョン（v1.0.2, v1.1.0 など）
+### 5. 以降のバージョン（v1.0.2, v1.1.0 など）—「いつもやること」のチェックリスト
 
-同じ手順（バージョン更新 → Archive → タグ → push → GitHub Release）を繰り返す
+1. **Xcode で Version / Build を上げる**  
+2. **Archive → Copy App** で .app を取り出し、.dmg を 1つ作る  
+3. 作った .dmg を、バージョンごとのフォルダ（例: `ReleaseArtifacts/1.0.2/`）に置く  
+4. Sparkle の `generate_appcast` で、そのフォルダに対して **`appcast.xml` を生成**する  
+5. 生成された `appcast.xml` をプロジェクトルートに移動し、`gh-pages` ブランチに commit & push（`SUFeedURL` から参照される）  
+6. 同じ .dmg を **GitHub Releases の vX.Y.Z リリースに添付して Publish** する  
+
+Appcast の生成コマンドや `gh-pages` ブランチ運用の詳細は [SPARKLE_SETUP.md](SPARKLE_SETUP.md) を参照。
 
 ---
 
@@ -100,21 +107,21 @@ git diff v1.0.0..v1.0.1
 
 ---
 
-## アプリ側の「アップデート確認」について
+## アプリ側の「更新を確認」について
 
-このリポジトリでは、**GitHub の「最新リリース」API** を使ってバージョン比較とダウンロード URL を取得するようにしてあります。
+このリポジトリでは **Sparkle** を使って更新チェック・ダウンロード・インストールを行います。
 
-- **確認先**: `https://api.github.com/repos/<owner>/<repo>/releases/latest`
-- **比較**: リリースの `tag_name`（例: v1.0.0）とアプリの `CFBundleShortVersionString` を比較
-- **ダウンロード**: そのリリースに添付した **.dmg の URL** をブラウザで開く
+- **確認先**: アプリの **Info.plist** の **SUFeedURL** で指定した Appcast（RSS 形式の XML）の URL
+- **比較**: Appcast 内のバージョンとアプリの **CFBundleVersion** / **CFBundleShortVersionString** を比較
+- **インストール**: 新しい版の .dmg（または .zip 等）を Sparkle がダウンロードし、ユーザーが「インストール」を選ぶとアプリを置き換える
 
-`App/UpdateChecker.swift` 内の `githubRepository`（owner/repo）を、自分のリポジトリ名（例: `c-c-meguchan/clipfeed`）に合わせて変更してください。
+初回セットアップ（EdDSA 鍵の生成・SUFeedURL の設定）とリリース時の Appcast 生成手順は [SPARKLE_SETUP.md](SPARKLE_SETUP.md) を参照してください。
 
 ---
 
-## （一時）アーカイブ済みリポジトリにリリースを追加する場合
+## （一時）アーカイブ済みリポジトリにリリースを追加する場合（1.0.2 への橋渡し用）
 
-旧体制で直接 .dmg を渡したユーザーを、一度だけ「アップデート確認」で新体制ビルドへ誘導したいとき、**clipfeed-site** がアーカイブ済みだと新規リリースは追加できない。その場合は一時的に Unarchive してから作業する。
+旧体制で直接 .dmg を渡したユーザーを、一度だけ「アップデート確認」で新体制ビルド（Sparkle 対応版）へ誘導したいとき、**clipfeed-site** がアーカイブ済みだと新規リリースは追加できない。その場合は一時的に Unarchive してから作業する。
 
 1. **Unarchive**
    - GitHub で `clipfeed-site` を開く
@@ -124,10 +131,10 @@ git diff v1.0.0..v1.0.1
    - **Releases** → **Draft a new release**
    - Tag: 旧ビルドより新しいバージョン（例: `v1.0.1`）
    - Title / Describe: 任意（例: `ClipFeed 1.0.1 (migration release)`）
-   - **Attach binaries**: 本体リポジトリでビルドした**新体制の** ClipFeed.dmg を添付（UpdateChecker が `c-c-meguchan/clipfeed` を向いているビルド）
+   - **Attach binaries**: 本体リポジトリでビルドした**新体制の** ClipFeed.dmg を添付（Sparkle の Appcast を向いているビルド）
    - **Publish release**
 
 3. **再アーカイブ**
    - **Settings** → **Danger Zone** → **Archive this repository** で再度アーカイブする
 
-作業が終わったらこのセクションは削除してよい。
+この手順は **旧版 → 1.0.2 への橋渡しのときだけ必要**。作業が完了したら、このセクションは削除してよい。

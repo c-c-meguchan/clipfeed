@@ -376,7 +376,7 @@ struct SettingsView: View {
                         .truncationMode(.middle)
                 }
                 Button(L("check_update", fallback: "Check for Updates")) {
-                    UpdateChecker.shared.checkForUpdates(showNoUpdateAlert: true, presentingWindow: SettingsWindowController.shared.window)
+                    (NSApplication.shared.delegate as? AppDelegate)?.sparkleUpdaterController.checkForUpdates(nil)
                 }
                 .buttonStyle(FlatSecondaryButtonStyle())
             }

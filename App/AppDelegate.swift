@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Carbon
 import Combine
+import Sparkle
 
 // ANSI キーコードと数字（1〜9）のマッピング
 // 数字キーのキーコードは連番ではないため明示的に定義する
@@ -57,6 +58,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var hotKeyHandlerRef: EventHandlerRef?
     private var iconFlashCancellable: AnyCancellable?
 
+    /// Sparkle のアップデータ（更新チェック・インストール UI を担当）
+    private let updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+
+    /// 設定画面の「更新を確認」ボタンなどから参照する用
+    var sparkleUpdaterController: SPUStandardUpdaterController { updaterController }
+
     private let keyCodeH: UInt16 = 4 // kVK_ANSI_H
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -96,7 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         observeClosePopoverAfterReCopy()
         observeClosePopover()
 
-        UpdateChecker.shared.checkForUpdates()
+        // Sparkle が自動でバックグラウンド更新チェックを行う（デフォルトは24時間ごと）
+        updaterController.startUpdater()
 
         // items.count が増加したとき（新規クリップボード検出時）にアイコンをフラッシュ
         iconFlashCancellable = clipboardViewModel.$items
