@@ -52,6 +52,9 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output/
 
+# Certificate Signing Request
+*.certSigningRequest
+
 # Temporary / backup
 *.log
 *.tmp
