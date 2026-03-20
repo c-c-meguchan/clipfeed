@@ -33,6 +33,9 @@ Carthage/Build/
 # Archives
 *.xcarchive
 
+# Release artifacts (built apps, DMGs, exports)
+ReleaseArtifacts/
+
 # macOS
 .DS_Store
 .AppleDouble
