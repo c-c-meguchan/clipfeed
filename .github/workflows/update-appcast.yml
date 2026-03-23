@@ -32,7 +32,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG=$(echo "${{ github.event.inputs.tag || github.ref_name }}" | tr -d '[:space:]')
           mkdir -p "ReleaseArtifacts/${TAG}"
           RELEASE_JSON=$(curl -s \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -44,12 +44,12 @@ jobs:
 
       - name: Generate appcast.xml
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG=$(echo "${{ github.event.inputs.tag || github.ref_name }}" | tr -d '[:space:]')
           ./sparkle-dist/bin/generate_appcast "ReleaseArtifacts/${TAG}"
 
       - name: Commit appcast.xml to gh-pages
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG=$(echo "${{ github.event.inputs.tag || github.ref_name }}" | tr -d '[:space:]')
           APPCAST_SOURCE="ReleaseArtifacts/${TAG}/appcast.xml"
 
           git config user.name "github-actions[bot]"
