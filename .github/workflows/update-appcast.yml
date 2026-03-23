@@ -34,11 +34,11 @@ jobs:
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           mkdir -p "ReleaseArtifacts/${TAG}"
-          ASSET_URL=$(curl -s \
+          RELEASE_JSON=$(curl -s \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}" | \
-            jq -r '.assets[] | select(.name | test("ClipFeed.*\\.dmg")) | .browser_download_url')
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}")
+          ASSET_URL=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name | endswith(".dmg")) | .browser_download_url')
           echo "Downloading: $ASSET_URL"
           curl -L -o "ReleaseArtifacts/${TAG}/$(basename "$ASSET_URL")" "$ASSET_URL"
 
