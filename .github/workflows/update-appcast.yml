@@ -3,6 +3,11 @@ name: Update Sparkle appcast
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.3)'
+        required: true
 
 jobs:
   update-appcast:
@@ -26,19 +31,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
           mkdir -p "ReleaseArtifacts/${TAG}"
           # ClipFeed*.dmg という名前の DMG を 1 個添付している前提
           gh release download "$TAG" --pattern "ClipFeed*.dmg" --dir "ReleaseArtifacts/${TAG}"
 
       - name: Generate appcast.xml
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
           ./sparkle-dist/bin/generate_appcast "ReleaseArtifacts/${TAG}"
 
       - name: Commit appcast.xml to gh-pages
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
           APPCAST_SOURCE="ReleaseArtifacts/${TAG}/appcast.xml"
 
           git config user.name "github-actions[bot]"
