@@ -44,8 +44,12 @@ jobs:
           curl -L -o "ReleaseArtifacts/${TAG}/$(basename "$ASSET_URL")" "$ASSET_URL"
 
       - name: Generate appcast.xml
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           TAG=$(echo "${{ github.event.inputs.tag || github.ref_name }}" | tr -d '[:space:]')
+          # キーチェーンに秘密鍵を登録
+          security add-generic-password -s "https://sparkle-project.org" -a "ed25519" -w "$SPARKLE_PRIVATE_KEY" -U
           ./sparkle-dist/bin/generate_appcast "ReleaseArtifacts/${TAG}"
 
       - name: Commit appcast.xml to gh-pages
