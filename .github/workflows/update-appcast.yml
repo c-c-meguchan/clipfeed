@@ -48,9 +48,7 @@ jobs:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           TAG=$(echo "${{ github.event.inputs.tag || github.ref_name }}" | tr -d '[:space:]')
-          # キーチェーンに秘密鍵を登録
-          security add-generic-password -s "https://sparkle-project.org" -a "ed25519" -w "$SPARKLE_PRIVATE_KEY" -U
-          ./sparkle-dist/bin/generate_appcast "ReleaseArtifacts/${TAG}"
+          ./sparkle-dist/bin/generate_appcast --ed-key-file <(echo "$SPARKLE_PRIVATE_KEY") "ReleaseArtifacts/${TAG}"
 
       - name: Commit appcast.xml to gh-pages
         run: |
