@@ -24,8 +24,9 @@ jobs:
       - name: Download Sparkle distribution (tools only)
         run: |
           mkdir -p sparkle-dist
-          SPARKLE_VERSION=$(curl -s https://api.github.com/repos/sparkle-project/Sparkle/releases/latest | jq -r '.tag_name')
-          curl -L "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" -o sparkle.tar.xz
+          SPARKLE_URL=$(curl -s https://api.github.com/repos/sparkle-project/Sparkle/releases/latest | jq -r '.assets[] | select(.name | endswith(".tar.xz")) | .browser_download_url')
+          echo "Sparkle URL: $SPARKLE_URL"
+          curl -L "$SPARKLE_URL" -o sparkle.tar.xz
           tar xf sparkle.tar.xz -C sparkle-dist --strip-components=1
 
       - name: Download DMG asset for this release
