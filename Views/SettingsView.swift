@@ -376,7 +376,7 @@ struct SettingsView: View {
                         .truncationMode(.middle)
                 }
                 Button(L("check_update", fallback: "Check for Updates")) {
-                    UpdateChecker.shared.checkForUpdates(showNoUpdateAlert: true, presentingWindow: SettingsWindowController.shared.window)
+                    NotificationCenter.default.post(name: AppDelegate.checkForUpdatesNotification, object: nil)
                 }
                 .buttonStyle(FlatSecondaryButtonStyle())
             }

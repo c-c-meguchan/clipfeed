@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Carbon
 import Combine
+import Sparkle
 
 // ANSI キーコードと数字（1〜9）のマッピング
 // 数字キーのキーコードは連番ではないため明示的に定義する
@@ -56,6 +57,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var hotKeyRef: EventHotKeyRef?
     private var hotKeyHandlerRef: EventHandlerRef?
     private var iconFlashCancellable: AnyCancellable?
+    private var updaterController: SPUStandardUpdaterController?
+
+    static let checkForUpdatesNotification = Notification.Name("AppDelegate.checkForUpdates")
 
     private let keyCodeH: UInt16 = 4 // kVK_ANSI_H
 
@@ -95,8 +99,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         observeOpenSettings()
         observeClosePopoverAfterReCopy()
         observeClosePopover()
+        observeCheckForUpdates()
 
-        UpdateChecker.shared.checkForUpdates()
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
 
         // items.count が増加したとき（新規クリップボード検出時）にアイコンをフラッシュ
         iconFlashCancellable = clipboardViewModel.$items
@@ -332,6 +337,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             queue: .main
         ) { [weak self] _ in
             self?.applyPopoverAppearance()
+        }
+    }
+
+    private func observeCheckForUpdates() {
+        NotificationCenter.default.addObserver(
+            forName: Self.checkForUpdatesNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updaterController?.updater.checkForUpdates()
         }
     }
 

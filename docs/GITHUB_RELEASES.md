@@ -2,132 +2,106 @@
 
 ## 構造
 
-このリポジトリ（ClipFeed 本体）で GitHub Releases を管理します。
-
 ```
 GitHub リポジトリ (c-c-meguchan/clipfeed)
- ├ Source code（main ブランチなど）
+ ├ main ブランチ（ソースコード）
+ ├ gh-pages ブランチ（appcast.xml）
  └ Releases
-      ├ v1.0.0  ← ここに ClipFeed.dmg を添付
-      ├ v1.0.1
-      └ v1.1.0
+      ├ v1.0.2  ← ClipFeed-1.0.2.dmg を添付
+      └ v1.0.3
 ```
 
-- **Releases** = バージョンごとの「配布パッケージ」を置く場所
-- 各リリースに **ClipFeed.dmg** を添付すると、ユーザーはその URL からダウンロードできる
-- アプリ内「アップデートを確認」は、この本体リポジトリの「最新リリース」と現在のバージョンを比較し、新しい場合はそのリリースの .dmg を開く
-
-## メリット
-
-| やりたいこと     | やり方 |
-|------------------|--------|
-| ユーザー配布     | リリースページの URL を共有するか、.dmg を直接ダウンロードさせる |
-| アップデート管理 | アプリが「最新リリース」を取得し、バージョン比較 → 新しければ「ダウンロード」で .dmg を開く |
-| 履歴管理         | 過去のリリース（v1.0.0, v1.0.1...）が一覧で残る |
+- 各リリースに **ClipFeed-x.x.x.dmg**（Notarize 済み）を添付する
+- リリースを publish すると GitHub Actions が自動で **appcast.xml** を更新する
+- Sparkle がアプリ内から appcast.xml を参照し、自動アップデートを提供する
 
 ---
 
-## リリースの作り方（手順）
+## リリース手順
 
-### 1. Xcode でバージョン番号を更新する
+### 1. バージョン番号を更新する
 
-1. Xcode でプロジェクトを開く
-2. 左のナビゲータで **プロジェクト名（ClipboardHistory）** を選択
-3. **TARGETS → ClipFeed** を選択
-4. **General** タブを開く
-5. **Identity** セクションの **Version** を新しいバージョン（例: `1.0.1`）に変更する
+Xcode でプロジェクトを開き、**TARGETS → ClipboardHistory → General**：
+- **Version**（MARKETING_VERSION）: 例 `1.0.4`
+- **Build**（CURRENT_PROJECT_VERSION）: 例 `4`
 
-### 2. .dmg を用意する
-
-- Xcode で **Product → Archive** からアーカイブを作成
-- **Distribute App** で **Copy App** を選び、.app を保存
-- 必要なら **ディスクユーティリティ** などで .app を .dmg にまとめる  
-  （または「Developer ID」で公証して .dmg を配布）
-
-### 3. Git タグを打つ（ローカル）
-
-ターミナル（Cursor のターミナルでも可）でプロジェクトのディレクトリに移動して実行：
+変更をコミット・タグを打つ：
 
 ```bash
-# 現在の最新コミットにタグを付ける
-git tag v1.0.1
-
-# 過去のコミットにタグを付けたい場合はハッシュを指定
-git tag v1.0.0 536518f
-
-# タグの一覧を確認
-git tag -l
-
-# タグをリモート（GitHub）に送る
-git push origin v1.0.1
-
-# 全タグをまとめて送る場合
-git push origin --tags
+git add ClipboardHistory.xcodeproj/project.pbxproj
+git commit -m "Bump version to 1.0.4"
+git tag v1.0.4
+git push origin main
+git push origin v1.0.4
 ```
 
-**ポイント**:
-- タグは「このコミットがこのバージョンです」という目印
-- あとから `git diff v1.0.0..v1.0.1` で差分を確認できるようになる
-- Cursor のターミナル（画面下部の `Terminal` パネル）から実行できる
+### 2. Archive してアプリを Notarize する
 
-### 4. GitHub でリリースを作成
+1. Xcode → **Product → Archive**
+2. Organizer が開いたら **Distribute App**
+3. **Direct Distribution** を選択 → **Distribute**
+4. 保存先を `ReleaseArtifacts/ClipFeed-x.x.x/` に指定してエクスポート
 
-1. リポジトリの **Releases** を開く（右サイドの "Releases" → "Create a new release"）
-2. **Choose a tag**: 先ほど push したタグ（例: `v1.0.1`）を選択
-3. **Release title**: 例）`v1.0.1` または `ClipFeed 1.0.1`
-4. **Describe**: 変更内容（リリースノート）
-5. **Attach binaries**: **ClipFeed.dmg** をドラッグ＆ドロップ
-6. **Publish release** をクリック
+> Xcode が自動で Apple の Notary Service に提出し、承認後に Notarize 済みの `.app` が保存される。
 
-### 5. 以降のバージョン（v1.0.2, v1.1.0 など）
+### 3. DMG を作成して staple する
 
-同じ手順（バージョン更新 → Archive → タグ → push → GitHub Release）を繰り返す
+```bash
+# DMG 作成
+hdiutil create -volname "ClipFeed" -srcfolder "ReleaseArtifacts/ClipFeed-1.0.4/ClipFeed.app" -ov -format UDZO "ReleaseArtifacts/ClipFeed-1.0.4/ClipFeed-1.0.4.dmg"
+
+# DMG を notarize に提出
+xcrun notarytool submit "ReleaseArtifacts/ClipFeed-1.0.4/ClipFeed-1.0.4.dmg" \
+  --apple-id "your@email.com" \
+  --team-id "49DPFSUDS9" \
+  --password "xxxx-xxxx-xxxx-xxxx" \
+  --wait
+
+# チケットを staple
+xcrun stapler staple "ReleaseArtifacts/ClipFeed-1.0.4/ClipFeed-1.0.4.dmg"
+
+# 署名確認
+spctl -a -vvv "ReleaseArtifacts/ClipFeed-1.0.4/ClipFeed.app"
+# → "accepted" "source=Notarized Developer ID" が出れば OK
+```
+
+### 4. GitHub Release を作成する
+
+```bash
+gh release create v1.0.4 \
+  "ReleaseArtifacts/ClipFeed-1.0.4/ClipFeed-1.0.4.dmg" \
+  --title "v1.0.4" \
+  --notes "変更内容をここに書く"
+```
+
+Release が publish されると GitHub Actions（`update-appcast.yml`）が自動で起動し、`gh-pages` ブランチの `appcast.xml` を更新する。
+
+---
+
+## appcast.xml の自動更新について
+
+`.github/workflows/update-appcast.yml` が以下を自動で行う：
+
+1. Sparkle の `generate_appcast` ツールをダウンロード
+2. リリースに添付された DMG をダウンロード
+3. `appcast.xml` を生成して `gh-pages` ブランチに push
+
+**手動で再実行したい場合**（失敗時など）：
+
+GitHub → Actions → **Update Sparkle appcast** → **Run workflow** → tag に `v1.0.4` を入力
+
+---
+
+## アップデートの仕組み
+
+- Sparkle が `Info.plist` の `SUFeedURL` を参照して appcast.xml をチェック
+- appcast.xml に新バージョンがあればユーザーに通知・ダウンロード
 
 ---
 
 ## バージョン間の差分を確認する
 
 ```bash
-# v1.0.0 から v1.0.1 の間の変更コミット一覧
-git log --oneline v1.0.0..v1.0.1
-
-# v1.0.0 から v1.0.1 の間のファイル変更統計
-git diff --stat v1.0.0..v1.0.1
-
-# v1.0.0 から v1.0.1 の間の詳細な差分
-git diff v1.0.0..v1.0.1
+git log --oneline v1.0.3..v1.0.4
+git diff --stat v1.0.3..v1.0.4
 ```
-
----
-
-## アプリ側の「アップデート確認」について
-
-このリポジトリでは、**GitHub の「最新リリース」API** を使ってバージョン比較とダウンロード URL を取得するようにしてあります。
-
-- **確認先**: `https://api.github.com/repos/<owner>/<repo>/releases/latest`
-- **比較**: リリースの `tag_name`（例: v1.0.0）とアプリの `CFBundleShortVersionString` を比較
-- **ダウンロード**: そのリリースに添付した **.dmg の URL** をブラウザで開く
-
-`App/UpdateChecker.swift` 内の `githubRepository`（owner/repo）を、自分のリポジトリ名（例: `c-c-meguchan/clipfeed`）に合わせて変更してください。
-
----
-
-## （一時）アーカイブ済みリポジトリにリリースを追加する場合
-
-旧体制で直接 .dmg を渡したユーザーを、一度だけ「アップデート確認」で新体制ビルドへ誘導したいとき、**clipfeed-site** がアーカイブ済みだと新規リリースは追加できない。その場合は一時的に Unarchive してから作業する。
-
-1. **Unarchive**
-   - GitHub で `clipfeed-site` を開く
-   - 上部の「This repository has been archived」バナーから **Unarchive** をクリック
-
-2. **リリースを作成**
-   - **Releases** → **Draft a new release**
-   - Tag: 旧ビルドより新しいバージョン（例: `v1.0.1`）
-   - Title / Describe: 任意（例: `ClipFeed 1.0.1 (migration release)`）
-   - **Attach binaries**: 本体リポジトリでビルドした**新体制の** ClipFeed.dmg を添付（UpdateChecker が `c-c-meguchan/clipfeed` を向いているビルド）
-   - **Publish release**
-
-3. **再アーカイブ**
-   - **Settings** → **Danger Zone** → **Archive this repository** で再度アーカイブする
-
-作業が終わったらこのセクションは削除してよい。
