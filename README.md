@@ -16,7 +16,7 @@
 ## ダウンロード
 
 **Releases** から最新バージョンをダウンロードいただけます。
-→ https://github.com/c-c-meguchan/clipfeed/releases![Uploading simple_demo.gif…]()
+→ https://github.com/c-c-meguchan/clipfeed/releases
 
 
 ## 主な機能
