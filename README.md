@@ -49,7 +49,7 @@ GitHubのIssueまたはDiscussionから、お気軽にお寄せください。
 
 ---
 
-### Description
+## Description
 
 ClipFeed is a minimal clipboard timeline for macOS that keeps the things you copy so you can quickly recover them when you need them.
 
