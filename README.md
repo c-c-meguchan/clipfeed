@@ -2,11 +2,59 @@
 
 **Never lose what you copied.**
 
+<img width="400" height="437" alt="simple_demo" src="https://github.com/user-attachments/assets/c45420e3-e1a6-46a4-8ef9-d227d1762ed9" />
+
+
+## 概要
+
+**ClipFeed** は、macOS向けのメニューバー常駐型クリップボード履歴アプリです。
+
+コピーした内容を自動で保存し、「さっきコピーしたものを別の内容で上書きしてしまった」という場面でも、すぐに履歴から復元できます。
+
+シンプルで軽量な使い心地を重視し、普段の作業を邪魔することなく、クリップボードの「保険」として動作します。
+
+## ダウンロード
+
+**Releases** から最新バージョンをダウンロードいただけます。
+→ https://github.com/c-c-meguchan/clipfeed/releases![Uploading simple_demo.gif…]()
+
+
+## 主な機能
+
+* コピーしたテキスト・画像の履歴を自動保存
+* メニューバーから素早く履歴へアクセス
+* スクリーンショットからOCRで文字を抽出
+* コピー元アプリごとの履歴フィルタ
+* ライト / ダークテーマ対応
+
+## こんな場面で役立ちます
+
+* コピー順を間違えて前の内容を失ってしまった
+* 数分前にコピーした内容をもう一度使いたい
+* スクリーンショット内の文字をOCRでコピーしたい
+* 開発・リサーチ・文章作成中の一時的なテキストを保持したい
+
+## プライバシー
+
+ClipFeedはオフラインファーストで設計されています。
+
+クリップボードの履歴はすべてMac内に保存され、外部サーバーへ送信されることはありません。ネットワーク通信は、アプリのアップデート確認にのみ使用されます。
+
+## フィードバックについて
+
+バグ報告や機能要望などのフィードバックを歓迎しています。
+
+GitHubのIssueまたはDiscussionから、お気軽にお寄せください。
+
+
+---
+
+### Description
+
 ClipFeed is a minimal clipboard timeline for macOS that keeps the things you copy so you can quickly recover them when you need them.
 
 It runs quietly in your menu bar and automatically saves your clipboard history — helping you grab something you copied a few seconds or minutes ago.
 
-![ClipFeed Screenshot](./screenshots/main.png)
 
 ## Download
 
@@ -15,6 +63,7 @@ Download the latest version from **Releases**.
 → https://github.com/c-c-meguchan/clipfeed/releases
 
 Just open the `.dmg` and move ClipFeed to your Applications folder.
+
 
 ## Why ClipFeed?
 
@@ -87,20 +136,3 @@ You can open an Issue or discussion on GitHub.
 
 ---
 
-# 日本語説明
-
-ClipFeedは、コピーした内容をうっかり上書きしてしまった時にすぐ復元できる、メニューバー常駐型のクリップボード履歴アプリです。
-
-コピーしたテキストや画像は自動的に履歴として保存され、後から簡単に取り出すことができます。
-
-特に以下のような場面で役立ちます。
-
-・コピー順を間違えて前の内容を失ってしまった  
-・スクリーンショットからOCRで文字をコピーした  
-・作業中の一時的なテキストを保持しておきたい  
-
-データはすべてローカルに保存され、開発者や第三者がクリップボードの内容にアクセスすることはありません。
-
-ネットワーク通信はアプリのアップデート確認のみに使用されます。
-
-ClipFeedは英語 / 日本語の両方に対応しています。
