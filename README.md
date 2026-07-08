@@ -22,8 +22,8 @@
 ## 主な機能
 
 * コピーしたテキスト・画像の履歴を自動保存
-* メニューバーから素早く履歴へアクセス
-* スクリーンショットからOCRで文字を抽出
+* メニューバーから素早く履歴へアクセス[⌘⌥⇧H]
+* スクリーンショットからOCRで文字を抽出[⌥↩︎]
 * コピー元アプリごとの履歴フィルタ
 * ライト / ダークテーマ対応
 
@@ -80,8 +80,8 @@ No setup, no complex features — just your clipboard history when you need it.
 ## Features
 
 • Clipboard timeline of recently copied items  
-• Menu bar app with quick access  
-• OCR from screenshots  
+• Menu bar app with quick access  [⌘⌥⇧H]
+• OCR from screenshots  [⌥↩︎]
 • Filter history by source application  
 • Light / Dark theme support  
 
