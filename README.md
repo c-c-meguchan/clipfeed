@@ -27,18 +27,10 @@
 * コピー元アプリごとの履歴フィルタ
 * ライト / ダークテーマ対応
 
-## こんな場面で役立ちます
-
-* コピー順を間違えて前の内容を失ってしまった
-* 数分前にコピーした内容をもう一度使いたい
-* スクリーンショット内の文字をOCRでコピーしたい
-* 開発・リサーチ・文章作成中の一時的なテキストを保持したい
 
 ## プライバシー
 
-ClipFeedはオフラインファーストで設計されています。
-
-クリップボードの履歴はすべてMac内に保存され、外部サーバーへ送信されることはありません。ネットワーク通信は、アプリのアップデート確認にのみ使用されます。
+クリップボードの履歴データはすべてあなたのMac内に保存され、外部サーバーへ送信されることはありません。ネットワーク通信は、アプリのアップデート確認にのみ使用されます。
 
 ## フィードバックについて
 
@@ -87,15 +79,6 @@ No setup, no complex features — just your clipboard history when you need it.
 
 ClipFeed is designed to stay lightweight and out of your way.
 
-## Example Use Cases
-
-• Recover text you accidentally overwrote  
-• Grab something you copied a minute ago  
-• Copy text from screenshots using OCR  
-• Keep temporary text while working  
-• Quickly reuse links or messages
-
-ClipFeed is especially useful during fast workflows like coding, writing, or research.
 
 ## Privacy by Design
 
